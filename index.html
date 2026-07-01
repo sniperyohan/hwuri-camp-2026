@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>행복한 우리 교회 · 삼척 수련회</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{
+    --ink:#4a4038; --sub:#8a7d70; --paper:#fffdf9;
+    --theme:#7fa886; --theme-soft:#eef4ee; --theme-deep:#5e8a68;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Pretendard',sans-serif; color:var(--ink); margin:0; padding:18px 14px 40px;
+    background:
+      radial-gradient(circle at 15% 10%, #fdf3 e8 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, #eef4 f2 0%, transparent 45%),
+      linear-gradient(170deg,#fbf6ee 0%,#f4f0e9 100%);
+    background-attachment:fixed; min-height:100vh;
+    transition:--theme .5s;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+
+  /* 헤더 */
+  .hero{text-align:center; padding:14px 0 6px; user-select:none;}
+  .cross{font-size:30px; opacity:.85; display:block; margin-bottom:2px; transition:.3s;}
+  .hero h1{font-size:25px; margin:0; font-weight:800; letter-spacing:-.5px; cursor:pointer; transition:.2s;}
+  .hero h1:active{transform:scale(.96);}
+  .hero .sub{color:var(--sub); font-size:13.5px; margin-top:5px; font-weight:500;}
+  .dday{
+    display:inline-block; margin-top:12px; padding:8px 20px; border-radius:30px;
+    background:var(--theme); color:#fff; font-size:14px; font-weight:700;
+    box-shadow:0 6px 18px -4px var(--theme); transition:background .5s,box-shadow .5s;
+    animation:float 3s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+
+  /* 진행률 바 */
+  .prog{max-width:340px; margin:16px auto 4px;}
+  .prog-track{height:7px; background:#e8e0d5; border-radius:10px; overflow:hidden;}
+  .prog-fill{height:100%; width:0; background:linear-gradient(90deg,var(--theme),var(--theme-deep));
+    border-radius:10px; transition:width 1.2s ease,background .5s;}
+  .prog-txt{text-align:center; font-size:11.5px; color:var(--sub); margin-top:5px; font-weight:600;}
+
+  /* 탭 */
+  .tabs{display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin:20px 0 18px;}
+  .tab{
+    border:none; padding:9px 15px; border-radius:24px; cursor:pointer;
+    background:var(--paper); color:var(--sub); font-size:13px; font-weight:700;
+    box-shadow:0 2px 8px rgba(120,100,80,.1); transition:.2s; font-family:inherit;
+  }
+  .tab:hover{transform:translateY(-2px);}
+  .tab.active{background:var(--theme); color:#fff; box-shadow:0 6px 16px -4px var(--theme);}
+
+  /* 패널 */
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .45s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(12px);}to{opacity:1; transform:translateY(0);}}
+
+  .day-head{
+    display:flex; align-items:center; gap:9px; font-size:17px; font-weight:800;
+    color:var(--theme-deep); padding:4px 6px 14px; transition:color .5s;
+  }
+  .day-head .badge{font-size:20px;}
+
+  /* 타임라인 카드 */
+  .item{
+    position:relative; background:var(--paper); border-radius:16px; padding:15px 17px 15px 19px;
+    margin:0 0 11px 20px; box-shadow:0 3px 14px rgba(120,100,80,.09);
+    transition:transform .22s, box-shadow .22s;
+    opacity:0; transform:translateY(14px);
+  }
+  .item.show{opacity:1; transform:translateY(0);}
+  .item:hover{transform:translateY(-3px) scale(1.008); box-shadow:0 10px 24px -6px rgba(120,100,80,.22);}
+  /* 타임라인 점 & 선 */
+  .item::before{
+    content:""; position:absolute; left:-20px; top:22px; width:11px; height:11px;
+    background:var(--theme); border-radius:50%; box-shadow:0 0 0 4px var(--theme-soft); transition:background .5s;
+  }
+  .item::after{
+    content:""; position:absolute; left:-15px; top:33px; bottom:-11px; width:2px; background:#e5ddd0;
+  }
+  .item:last-child::after{display:none;}
+  .item.now{box-shadow:0 6px 20px -4px var(--theme); outline:2px solid var(--theme);}
+
+  .now-tag{
+    display:inline-block; font-size:10px; font-weight:800; color:#fff; background:var(--theme-deep);
+    padding:2px 9px; border-radius:12px; margin-left:7px; vertical-align:middle; animation:float 1.6s infinite;
+  }
+  .time{font-size:11.5px; font-weight:800; color:var(--theme-deep); letter-spacing:.3px; transition:color .5s;}
+  .title{font-size:16px; font-weight:800; margin:4px 0 7px; letter-spacing:-.3px;}
+  .row{font-size:13px; color:var(--sub); line-height:1.6; margin:4px 0; display:flex; gap:7px; align-items:flex-start;}
+  .row .ic{flex:0 0 auto;}
+  .row b{color:var(--ink); font-weight:700;}
+  .row.prep{color:#c98a5a;}
+  .row.prep b{color:#b5713f;}
+
+  /* 방배정 표 */
+  table.room{width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px;
+    background:var(--paper); border-radius:14px; overflow:hidden; box-shadow:0 3px 14px rgba(120,100,80,.1);}
+  table.room th, table.room td{padding:10px 8px; text-align:center; vertical-align:top; border-bottom:1px solid #f0e9dd;}
+  table.room th{background:var(--theme-soft); font-weight:800; color:var(--theme-deep);}
+  table.room td{color:var(--sub); line-height:1.55;}
+  .note{font-size:12.5px; color:var(--sub); margin-top:14px; line-height:1.65;
+    background:var(--theme-soft); padding:12px 14px; border-radius:12px;}
+  .note b{color:var(--theme-deep);}
+
+  .footer{text-align:center; color:#b8ac9d; font-size:12px; margin-top:26px; line-height:1.7;}
+  .egg{
+    display:none; text-align:center; margin:14px auto; max-width:400px;
+    padding:15px 20px; border-radius:16px; font-size:14px; font-weight:700;
+    background:#fff6ea; color:#c98a5a; box-shadow:0 6px 18px rgba(201,138,90,.2); animation:fade .5s;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <span class="cross" id="cross">✝</span>
+    <h1 id="logo">행복한 우리 교회</h1>
+    <div class="sub">삼척 여름 수련회 · 2026. 7. 16(목) ~ 7. 20(일)</div>
+    <div class="dday" id="dday">D-day 계산중…</div>
+  </div>
+
+  <div class="prog">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-txt" id="progTxt"></div>
+  </div>
+
+  <div class="egg" id="egg">함께라서 은혜로운 수련회 되기를 기도합니다 🙏</div>
+
+  <div class="tabs">
+    <button class="tab active" data-t="d1" data-c="sage">7/16 목</button>
+    <button class="tab" data-t="d2" data-c="coral">7/17 금</button>
+    <button class="tab" data-t="d3" data-c="sky">7/18 토</button>
+    <button class="tab" data-t="d4" data-c="lavender">7/20 산저</button>
+    <button class="tab" data-t="d5" data-c="mint">7/20 삼척</button>
+    <button class="tab" data-t="d6" data-c="peach">방배정</button>
+  </div>
+
+  <!-- 7/16 목 -->
+  <div class="panel active" id="d1">
+    <div class="day-head"><span class="badge">🌿</span>7월 16일 (목)</div>
+    <div class="item"><div class="time">12:00-12:30</div><div class="title">김진혁 산저 출발</div>
+      <div class="row"><span class="ic">📌</span><span>산저 친구들 픽업 용 스타렉스 (운전자: 김진혁)</span></div></div>
+    <div class="item"><div class="time">12:30-13:00</div><div class="title">목사님, 지도부 출발</div>
+      <div class="row"><span class="ic">👤</span><span>안성용 장로님 차량으로 이동 (김준원 목사님, 안성용 장로님, 정종원 권사님 3분)</span></div>
+      <div class="row"><span class="ic">📌</span><span>먼저 도착하시면 삼척 오상석 목사님과 말씀 나누고 계시기로 하심</span></div></div>
+    <div class="item"><div class="time">14:00-14:30</div><div class="title">1차 출발</div>
+      <div class="row"><span class="ic">👤</span><span>1. 조영종, 유재혁, 허유정, 김우섭 총 4인 (운전자: 조영종) 팰리세이드<br>2. 안유리 자차(안유리 외 4인)</span></div>
+      <div class="row"><span class="ic">📌</span><span>안유리: 삼척교회 도착 후 물품 모두 교회에 내릴 것</span></div></div>
+    <div class="item"><div class="time">14:30-15:00</div><div class="title">삼척으로 이동</div></div>
+    <div class="item"><div class="time">18:00-18:30</div><div class="title">저녁식사</div>
+      <div class="row"><span class="ic">📌</span><span>장소 미정 · 저녁식사 후 숙소 이동</span></div></div>
+    <div class="item"><div class="time">18:30-19:00</div><div class="title">교회에서 집결</div>
+      <div class="row"><span class="ic">📍</span><span>충현교회 동문 경비실 앞</span></div></div>
+    <div class="item"><div class="time">19:00-19:30</div><div class="title">삼척으로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>1. 강현정 자차<br>2. 김영호 자차<br>3. 교회스타렉스(운전자 박호영) — 박호영, 김요한, 김우섭, 심경하, 이종훈, 이현우, 조천영, 최윤화 8인<br>4. 이재원(금요일 새벽 고속버스)</span></div>
+      <div class="row"><span class="ic">📌</span><span>동해건강무릉숲으로 바로 올 것</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>저녁해결 여부(집에서 먹고 오는지? 차량 내 간단 취식? 휴게소?)</span></div></div>
+    <div class="item"><div class="time">22:30-23:00</div><div class="title">방배정 및 취침</div>
+      <div class="row"><span class="ic">🛏️</span><span><b>16일:</b> 8인실 1실(10명), 6인실 3실(8명), 2인실 6실(3명)</span></div></div>
+  </div>
+
+  <!-- 7/17 금 -->
+  <div class="panel" id="d2">
+    <div class="day-head"><span class="badge">🌅</span>7월 17일 (금)</div>
+    <div class="item"><div class="time">07:30-08:00</div><div class="title">기상 및 세면</div>
+      <div class="row"><span class="ic">📌</span><span>산저 아이들 잘 깨워서 시간 맞춰 안 늦게 챙기기</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>런닝맨 후 갈아입을 옷이나 세면도구 등 필요시 챙길 것</span></div></div>
+    <div class="item"><div class="time">08:00-08:30</div><div class="title">교회로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>스타렉스 3대(2대 산저학생들+김진혁 / 1대 충현10명), 팰리세이드(7명), 안유리 자차(장보는 용도), 안성용 장로님차(지도부)</span></div></div>
+    <div class="item"><div class="time">08:30-09:00</div><div class="title">개회예배</div>
+      <div class="row"><span class="ic">👤</span><span>김준원 목사님 · 행복한우리교회 2층 본당</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>워크북</span></div></div>
+    <div class="item"><div class="time">09:00-09:30</div><div class="title">아침식사</div>
+      <div class="row"><span class="ic">👤</span><span>안유리 · 김밥배달</span></div></div>
+    <div class="item"><div class="time">09:30-10:00</div><div class="title">조편성, 조별모임</div>
+      <div class="row"><span class="ic">📌</span><span>인사 및 조 편성(5개조), 팀별 미션지 나눠주기, 미션수행 준비물품?(전도지?)</span></div>
+      <div class="row prep"><span class="ic">🚐</span><span>스타렉스 4대 각 11명(학생 42명): 박호영+이현우+학생9 / 김요한+조천영+학생9 / 김우섭+장유진+학생9 / 김진혁+유재혁+학생9 / 팰리세이드 8명(조영종+김영호+학생6)</span></div></div>
+    <div class="item"><div class="time">10:00-10:30</div><div class="title">런닝맨</div>
+      <div class="row prep"><span class="ic">🎒</span><span>교회 남은 팀: 수박 등 간식사기, 바비큐 재료 장보기, 성경퀴즈 준비 및 세팅 (교회 팀 점심메뉴? 지도부 점심메뉴?) / 런닝맨조끼, 상품 (상품시상 언제?)</span></div></div>
+    <div class="item"><div class="time">12:00-12:30</div><div class="title">점심식사</div>
+      <div class="row"><span class="ic">🍜</span><span>중식당 짜장면 (팀별 삼척시내 중국집 찾기)</span></div></div>
+    <div class="item"><div class="time">13:00-13:30</div><div class="title">런닝맨</div>
+      <div class="row"><span class="ic">👤</span><span>김요한 · 마지막에 공원에서 집결하여 이름표 떼기 미션 진행</span></div></div>
+    <div class="item"><div class="time">15:00-15:30</div><div class="title">교회로 이동</div></div>
+    <div class="item"><div class="time">15:30-16:00</div><div class="title">간식</div>
+      <div class="row"><span class="ic">👤</span><span>최윤화, 심경하, 허유정 · 수박 등</span></div></div>
+    <div class="item"><div class="time">16:00-16:30</div><div class="title">샤워 및 휴식</div>
+      <div class="row"><span class="ic">📍</span><span>교회 내 샤워실</span></div></div>
+    <div class="item"><div class="time">16:30-17:00</div><div class="title">바이블 챌린지</div>
+      <div class="row"><span class="ic">👤</span><span>안유리 · 런닝맨 조에서 반으로 나눠 10개 조로 구성 (삼척+산저 섞어서 한 조당 4-5명)</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>노트북, 화이트보드, 마커펜, 퀴즈 상품</span></div></div>
+    <div class="item"><div class="time">17:30-18:00</div><div class="title">저녁식사 (오리고기 배달)</div></div>
+    <div class="item"><div class="time">18:30-19:00</div><div class="title">구원의 확신 그룹상담</div>
+      <div class="row"><span class="ic">👤</span><span>허유정 외 리더 9인 총 10인 · 나이대별로 소그룹 구성</span></div>
+      <div class="row"><span class="ic">📌</span><span>런닝맨 조와 다르게 나이대별로 다시 조 짜는 게 나을 듯</span></div>
+      <div class="row prep"><span class="ic">👥</span><span>리더: 김영호, 김요한, 심경하, 이종훈, 이재원, 이현우, 조천영, 장유진, 최윤화 10팀</span></div></div>
+    <div class="item"><div class="time">20:00-20:30</div><div class="title">한걸음 더 가까이 (초등/중고등)</div>
+      <div class="row"><span class="ic">👤</span><span>삼척 친구들 일임</span></div></div>
+    <div class="item"><div class="time">21:00-21:30</div><div class="title">야식 (치킨, 피자)</div>
+      <div class="row"><span class="ic">👤</span><span>안유리 · 배달 주문할 것</span></div></div>
+    <div class="item"><div class="time">21:30-22:00</div><div class="title">숙소로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>오전 이동한 차 그대로</span></div></div>
+    <div class="item"><div class="time">22:00-22:30</div><div class="title">저녁평가회</div>
+      <div class="row"><span class="ic">👤</span><span>이재원 인도, 박호영 기도 · 고전 3:5-9절</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>워크북</span></div></div>
+    <div class="item"><div class="time">22:30-23:00</div><div class="title">세면 및 취침</div>
+      <div class="row prep"><span class="ic">🎒</span><span>내일 아침 나갈 때 빨리 나가도록 짐 미리 싸기</span></div></div>
+  </div>
+
+  <!-- 7/18 토 -->
+  <div class="panel" id="d3">
+    <div class="day-head"><span class="badge">🏖️</span>7월 18일 (토)</div>
+    <div class="item"><div class="time">07:00-07:30</div><div class="title">기상 및 세면</div>
+      <div class="row prep"><span class="ic">🎒</span><span>산저 친구들 짐 다 싸기 / 충현교사 중 산저팀도 짐싸서 체크아웃 / 삼척팀도 남은 방에 짐 옮기고 기존 방은 체크아웃</span></div></div>
+    <div class="item"><div class="time">07:30-08:00</div><div class="title">아침경건회</div>
+      <div class="row"><span class="ic">👤</span><span>김영호 인도, 강현정 기도 · 사도행전 1:8절 말씀</span></div></div>
+    <div class="item"><div class="time">08:00-08:30</div><div class="title">아침식사</div>
+      <div class="row"><span class="ic">🍽️</span><span>요거트, 모닝빵, 잼, 과일, 견과류 · 커피포트 있음, 전자레인지는 관리 동</span></div></div>
+    <div class="item"><div class="time">09:00-09:30</div><div class="title">교회로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>스타렉스 3대(2대 산저학생들+김진혁 / 1대 충현10명), 팰리세이드(7명), 안유리 자차</span></div></div>
+    <div class="item"><div class="time">09:30-10:00</div><div class="title">진로 직업 특강</div>
+      <div class="row"><span class="ic">👤</span><span>각 코너별 담당자</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>혹시 모르니 맹방비치캠핑장 바깥쪽 그늘 자리 미리 맡아놓아야 할지?</span></div></div>
+    <div class="item"><div class="time">11:30-12:00</div><div class="title">점심 (두끼 떡볶이 뷔페)</div>
+      <div class="row"><span class="ic">👤</span><span>안유리 예약 · 교회에서 도보 이동(500m, 걸어서 10분)</span></div></div>
+    <div class="item"><div class="time">13:00-13:30</div><div class="title">맹방비치캠핑장 이동</div>
+      <div class="row"><span class="ic">📌</span><span>교회에서 바비큐 관련 용품 및 식재료 일체 챙길 것(밥포함) · 25인승 버스</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>가스버너, 부탄가스, 일회용품, 삼겹살, 밥, 라면, 쌈야채, 생수, 돗자리, 캠핑의자 등</span></div></div>
+    <div class="item"><div class="time">13:30-14:00</div><div class="title">내손내잡 (덕봉산생태탐험로)</div>
+      <div class="row"><span class="ic">👤</span><span>선생님마다 아이들 개별로 붙어서 안전사고 없도록 잘 관리할 것</span></div>
+      <div class="row"><span class="ic">📍</span><span>A10, A11, A31, A32, A38 사이트 총 5곳 예약함 (바비큐 준비 세팅)</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>구명조끼, 채집용 봉지(?)</span></div></div>
+    <div class="item"><div class="time">15:30-16:00</div><div class="title">물물교환</div>
+      <div class="row"><span class="ic">👤</span><span>오상석 목사님 · 채집해온 것과 삼겹살 바꿔주기</span></div></div>
+    <div class="item"><div class="time">16:00-16:30</div><div class="title">조리 및 식사 (맹방비치캠핑장)</div>
+      <div class="row"><span class="ic">👤</span><span>김진혁, 이현우, 이종훈, 김우섭</span></div>
+      <div class="row"><span class="ic">📌</span><span>4인기준×5개사이트 예약 (인원 관리는 현장 상황에 맞게 진행)</span></div></div>
+    <div class="item"><div class="time">18:00-18:30</div><div class="title">샤워 (캠핑장 샤워시설)</div></div>
+    <div class="item"><div class="time">18:30-19:00</div><div class="title">산저교회로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>충현스타렉스(운전자 김진혁, 산저친구들 9명), 정봉구목사님(산저친구들 9명), 팰리세이드(운전자 조영종, 유재혁, 최윤화, 김요한, 조천영 5명), 안유리 자차(안유리 외 4인)</span></div>
+      <div class="row"><span class="ic">📌</span><span>남은 충현 삼척팀(10명)은 스타렉스로 교회 복귀 및 숙소 이동</span></div></div>
+    <div class="item"><div class="time">22:00-22:30</div><div class="title">저녁평가회</div>
+      <div class="row"><span class="ic">👤</span><span>유재혁 인도, 최윤화 기도</span></div></div>
+    <div class="item"><div class="time">22:30-23:00</div><div class="title">세면 및 취침</div>
+      <div class="row"><span class="ic">🛏️</span><span>산저교회 숙소</span></div></div>
+  </div>
+
+  <!-- 7/20 산저 -->
+  <div class="panel" id="d4">
+    <div class="day-head"><span class="badge">💜</span>7월 20일 (일) · 산저교회 팀</div>
+    <div class="item"><div class="time">07:30-08:00</div><div class="title">기상 및 세면</div></div>
+    <div class="item"><div class="time">08:00-08:30</div><div class="title">아침경건회</div>
+      <div class="row"><span class="ic">👤</span><span>김진혁 인도, 김요한 기도 · 마태복음 9장 35-38절</span></div></div>
+    <div class="item"><div class="time">08:30-09:00</div><div class="title">아침식사</div>
+      <div class="row"><span class="ic">🍽️</span><span>산저교회 위 2층 숙소 주방</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>컵밥</span></div></div>
+    <div class="item"><div class="time">09:30-10:00</div><div class="title">마을 노방 전도</div>
+      <div class="row"><span class="ic">👤</span><span>산저팀 전원 · 시간이 많지 않으므로 산저리만 돌기</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>파스 선물, 전도지</span></div></div>
+    <div class="item"><div class="time">10:30-11:00</div><div class="title">숙소 복귀 및 예배 준비</div>
+      <div class="row"><span class="ic">👤</span><span>조천영 · 특송 MR 및 음향 체크 등</span></div></div>
+    <div class="item"><div class="time">11:00-11:30</div><div class="title">주일예배 및 특송 (조천영 집사)</div>
+      <div class="row"><span class="ic">🎵</span><span>조천영 (곡명: 세상을 사는 지혜) · 특송 후 앞에 나와서 인사</span></div></div>
+    <div class="item"><div class="time">12:00-12:30</div><div class="title">점심식사</div>
+      <div class="row"><span class="ic">👤</span><span>안유리 예약 · 산저시내 식당(들깨칼국수, 김치찌개 등)</span></div></div>
+    <div class="item"><div class="time">13:00-13:30</div><div class="title">짐정리 및 서울 출발</div></div>
+    <div class="item"><div class="time">13:30-14:00</div><div class="title">서울로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>팰리세이드(조영종, 조천영 2인), 안유리(안유리 외 4명 집 귀가), 스타렉스(운전자 김진혁, 유재혁, 최윤화, 김요한 4인)</span></div>
+      <div class="row"><span class="ic">📌</span><span>스타렉스는 교회 복귀</span></div></div>
+  </div>
+
+  <!-- 7/20 삼척 -->
+  <div class="panel" id="d5">
+    <div class="day-head"><span class="badge">🌊</span>7월 20일 (일) · 삼척 행복한 우리 교회 팀</div>
+    <div class="item"><div class="time">07:30-08:00</div><div class="title">기상 및 세면</div>
+      <div class="row prep"><span class="ic">🎒</span><span>서울 갈 짐 챙기기 및 체크아웃</span></div></div>
+    <div class="item"><div class="time">08:00-08:30</div><div class="title">아침경건회</div>
+      <div class="row"><span class="ic">👤</span><span>이종훈 인도, 장유진 기도 · 마태복음 9장 35-38절</span></div></div>
+    <div class="item"><div class="time">08:30-09:00</div><div class="title">아침식사</div>
+      <div class="row"><span class="ic">🍽️</span><span>6인실 남자방에서 취식 (숙소 내 커피포트 있음)</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>컵밥</span></div></div>
+    <div class="item"><div class="time">09:30-10:00</div><div class="title">교회로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>스타렉스(운전자 박호영) — 박호영, 이재원, 이종훈, 이현우, 심경하, 허유정, 김우섭, 장유진 8인 / 김영호 자차 / 강현정 자차</span></div></div>
+    <div class="item"><div class="time">10:00-10:30</div><div class="title">특송연습</div></div>
+    <div class="item"><div class="time">10:30-11:00</div><div class="title">예배준비</div></div>
+    <div class="item"><div class="time">11:00-11:30</div><div class="title">주일예배 및 특송 (언제나 어떤 상황에서도)</div>
+      <div class="row"><span class="ic">🎵</span><span>4성부 합창</span></div>
+      <div class="row prep"><span class="ic">🎒</span><span>MR? 반주? 어떻게 할건지?</span></div></div>
+    <div class="item"><div class="time">12:00-12:30</div><div class="title">점심식사 (교회)</div>
+      <div class="row"><span class="ic">🍽️</span><span>교회 1층 식당 · 행복한 우리 교회에서 제공</span></div></div>
+    <div class="item"><div class="time">13:00-13:30</div><div class="title">짐정리 및 서울 출발</div></div>
+    <div class="item"><div class="time">13:30-14:00</div><div class="title">서울로 이동</div>
+      <div class="row"><span class="ic">🚐</span><span>스타렉스(운전자 박호영) — 박호영, 이재원, 이종훈, 이현우, 심경하, 허유정, 김우섭, 장유진 8인 / 김영호 자차(집 귀가) / 강현정 자차(집 귀가)</span></div>
+      <div class="row"><span class="ic">📌</span><span>충현교회로 복귀</span></div></div>
+  </div>
+
+  <!-- 방배정 -->
+  <div class="panel" id="d6">
+    <div class="day-head"><span class="badge">🛏️</span>방배정</div>
+    <table class="room">
+      <tr><th>구분</th><th>16일 목</th><th>17일 금</th><th>18일 토</th></tr>
+      <tr>
+        <th>8인실<br>(최대10)</th>
+        <td>김요한, 김우섭, 김진혁, 박호영, 유재혁, 이종훈, 이현우, 조영종, 조천영 (9명)</td>
+        <td>김요한, 김우섭, 김진혁, 박호영, 유재혁, 이종훈, 이재원, 이현우, 조영종, 조천영 (10명)</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <th>6인실<br>(최대8)</th>
+        <td>1. 안유리, 심경하, 허유정, 최윤화, 장유진, 정종원 권사님 (6명)<br>2. 산저 남자 8명<br>3. 산저 여자 8명</td>
+        <td>1. 안유리, 심경하, 허유정, 최윤화, 장유진 (5명)<br>2. 산저 남자 8명<br>3. 산저 여자 8명</td>
+        <td>이종훈, 이재원, 박호영, 이현우, 김우섭 (5명)</td>
+      </tr>
+      <tr>
+        <th>2인실<br>(최대3)</th>
+        <td>1. 강현정 외 2인<br>2. 김영호 외 2인<br>3. 조창희 외 4인<br>4. 김준원 목사님<br>5. 안성용 장로님<br>6. 산저 남자 3명</td>
+        <td>1. 강현정 외 2인<br>2. 김영호 외 2인<br>3. 조창희 외 4인<br>4. 산저 남자 3명</td>
+        <td>1. 강현정 외 2인<br>2. 김영호 외 2인<br>3. 심경하, 장유진, 허유정 (3명)</td>
+      </tr>
+    </table>
+    <p class="note"><b>비고 —</b> 산저로 이동: 안유리 외 4인, 김진혁, 조영종, 유재혁, 최윤화, 김요한, 조천영 (산저교회 취침) 7명</p>
+  </div>
+
+  <p class="footer">행복한 우리 교회 · 삼척 여름 수련회<br>“너는 청년의 때에 너의 창조주를 기억하라”</p>
+</div>
+
+<script>
+  const themes={
+    sage:{t:'#7fa886',s:'#eef4ee',d:'#5e8a68'},
+    coral:{t:'#e59a86',s:'#fbeee9',d:'#cf7a63'},
+    sky:{t:'#7fa8c9',s:'#eaf2f8',d:'#5e88ab'},
+    lavender:{t:'#a291c4',s:'#f2eef8',d:'#83719f'},
+    mint:{t:'#79b8a8',s:'#e9f5f1',d:'#589685'},
+    peach:{t:'#e0a066',s:'#fbf1e6',d:'#c8834a'}
+  };
+  function applyTheme(c){
+    const th=themes[c]||themes.sage, r=document.documentElement.style;
+    r.setProperty('--theme',th.t); r.setProperty('--theme-soft',th.s); r.setProperty('--theme-deep',th.d);
+  }
+
+  // 카드 등장 애니메이션
+  function reveal(panel){
+    panel.querySelectorAll('.item').forEach((it,i)=>{
+      it.classList.remove('show');
+      setTimeout(()=>it.classList.add('show'), 60*i);
+    });
+    markNow(panel);
+  }
+
+  // 탭 전환
+  const tabs=document.querySelectorAll('.tab'), panels=document.querySelectorAll('.panel');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    panels.forEach(p=>p.classList.remove('active'));
+    t.classList.add('active');
+    applyTheme(t.dataset.c);
+    const p=document.getElementById(t.dataset.t); p.classList.add('active');
+    reveal(p);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }));
+
+  // NOW 표시
+  function markNow(panel){
+    panel.querySelectorAll('.now-tag').forEach(e=>e.remove());
+    panel.querySelectorAll('.item').forEach(i=>i.classList.remove('now'));
+    const now=new Date();
+    if(now<new Date(2026,6,16)||now>new Date(2026,6,21)) return;
+    const hm=now.getHours()*60+now.getMinutes();
+    panel.querySelectorAll('.item').forEach(it=>{
+      const t=it.querySelector('.time'); if(!t)return;
+      const m=t.textContent.match(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/); if(!m)return;
+      const s=+m[1]*60+ +m[2], e=+m[3]*60+ +m[4];
+      if(hm>=s&&hm<e){ it.classList.add('now');
+        t.insertAdjacentHTML('afterend','<span class="now-tag">NOW</span>'); }
+    });
+  }
+
+  // D-day & 진행률
+  (function(){
+    const start=new Date(2026,6,16), end=new Date(2026,6,20,23,59,59), now=new Date();
+    const dd=document.getElementById('dday'), fill=document.getElementById('progFill'), txt=document.getElementById('progTxt');
+    const d=Math.ceil((start-now)/(864e5));
+    if(now<start){ dd.textContent='수련회까지 D-'+d+' 🔥'; setTimeout(()=>fill.style.width='0%',300); txt.textContent='설레는 마음으로 준비 중이에요'; }
+    else if(now<=end){
+      dd.textContent='🔥 수련회 진행 중! 🔥';
+      const pct=Math.round((now-start)/(end-start)*100);
+      setTimeout(()=>fill.style.width=pct+'%',300);
+      const day=Math.floor((now-start)/(864e5))+1;
+      txt.textContent='수련회 '+day+'일째 · '+pct+'% 진행';
+    } else { dd.textContent='은혜로운 수련회였습니다 🙏'; setTimeout(()=>fill.style.width='100%',300); txt.textContent='모든 일정 마침 · 100%'; }
+  })();
+
+  // 이스터에그
+  let c=0;
+  document.getElementById('logo').addEventListener('click',()=>{
+    if(++c>=3){ const e=document.getElementById('egg'); e.style.display='block';
+      document.getElementById('cross').style.transform='rotate(360deg) scale(1.2)';
+      c=0; setTimeout(()=>{e.style.display='none';document.getElementById('cross').style.transform='';},4000); }
+  });
+
+  // 첫 화면
+  applyTheme('sage');
+  reveal(document.getElementById('d1'));
+</script>
+</body>
+</html>
