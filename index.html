@@ -142,6 +142,42 @@
   body[data-theme="simple"] .note b{color:var(--accent);}
   body[data-theme="simple"] .footer{color:#b4b9c2;}
   body[data-theme="simple"] .egg{background:var(--accent-soft); color:var(--accent); border-radius:8px; border:1px solid var(--line);}
+  /* ===== 다크모드 ===== */
+  body[data-theme="dark"]{
+    --accent:#7fb0e0; --accent-soft:#1e2a3a; --line:#2a3340;
+    background:#12161c; color:#dbe3ec;
+  }
+  body[data-theme="dark"] .cross{opacity:.6; font-size:22px; color:#7fb0e0;}
+  body[data-theme="dark"] .hero h1{font-size:23px; letter-spacing:-.5px; color:#eef3f9;}
+  body[data-theme="dark"] .hero .sub{color:#8b95a3; font-size:13px;}
+  body[data-theme="dark"] .dday{border-radius:8px; background:#7fb0e0; color:#12161c; font-weight:800; font-size:13px;}
+  body[data-theme="dark"] .prog-track{background:#232b35;}
+  body[data-theme="dark"] .prog-fill{background:var(--accent);}
+  body[data-theme="dark"] .prog-txt{color:#8b95a3;}
+  body[data-theme="dark"] .tab{background:#1a212a; color:#9aa4b2; border-radius:8px; border:1px solid var(--line);}
+  body[data-theme="dark"] .tab:hover{border-color:var(--accent); color:var(--accent);}
+  body[data-theme="dark"] .tab.active{background:var(--accent); color:#12161c; border-color:var(--accent); font-weight:700;}
+  body[data-theme="dark"] .day-head{font-size:16px; color:#eef3f9; border-bottom:2px solid #7fb0e0; margin:0 4px 14px; padding-bottom:10px;}
+  body[data-theme="dark"] .day-head .badge{font-size:16px;}
+  body[data-theme="dark"] .item{background:#1a212a; border:1px solid var(--line); border-radius:10px; border-left:3px solid transparent;}
+  body[data-theme="dark"] .item:hover{border-left-color:var(--accent); box-shadow:0 6px 18px rgba(0,0,0,.4); transform:translateY(-1px);}
+  body[data-theme="dark"] .item.now{border-left-color:var(--accent); background:var(--accent-soft);}
+  body[data-theme="dark"] .now-tag{background:var(--accent); color:#12161c; border-radius:4px;}
+  body[data-theme="dark"] .time{color:var(--accent);}
+  body[data-theme="dark"] .title{color:#eef3f9; font-weight:700;}
+  body[data-theme="dark"] .row{color:#b3bcc8;}
+  body[data-theme="dark"] .row b{color:#eef3f9;}
+  body[data-theme="dark"] .row.prep{color:#e0a878;}
+  body[data-theme="dark"] .row .ic{opacity:.85;}
+  body[data-theme="dark"] table.room{background:#1a212a; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+  body[data-theme="dark"] table.room th, body[data-theme="dark"] table.room td{border-bottom:1px solid var(--line); border-right:1px solid var(--line);}
+  body[data-theme="dark"] table.room th{background:#232b35; color:#eef3f9; font-weight:700;}
+  body[data-theme="dark"] table.room td{color:#b3bcc8;}
+  body[data-theme="dark"] .note{background:#1e2a3a; border-radius:8px; color:#b3bcc8; border:1px solid var(--line);}
+  body[data-theme="dark"] .note b{color:var(--accent);}
+  body[data-theme="dark"] .footer{color:#6b7684;}
+  body[data-theme="dark"] .egg{background:#1e2a3a; color:#7fb0e0; border-radius:10px; border:1px solid var(--line);}
+
 </style>
 </head>
 <body data-theme="soft">
@@ -149,6 +185,7 @@
   <div class="switch">
     <button id="btnSoft" class="on" data-th="soft">🌿 부드럽게</button>
     <button id="btnSimple" data-th="simple">▫️ 심플하게</button>
+    <button id="btnDark" data-th="dark">🌙 다크모드</button>
   </div>
 
   <div class="hero">
@@ -424,15 +461,17 @@
   });
 
   // ===== 디자인 토글 =====
-  const body=document.body, bSoft=document.getElementById('btnSoft'), bSimple=document.getElementById('btnSimple');
+  const body=document.body, bSoft=document.getElementById('btnSoft'), bSimple=document.getElementById('btnSimple'), bDark=document.getElementById('btnDark');
   function setTheme(th){
     body.setAttribute('data-theme',th);
     bSoft.classList.toggle('on',th==='soft');
     bSimple.classList.toggle('on',th==='simple');
+    bDark.classList.toggle('on',th==='dark');
     try{ localStorage.setItem('camp-theme',th); }catch(e){}
   }
   bSoft.addEventListener('click',()=>setTheme('soft'));
   bSimple.addEventListener('click',()=>setTheme('simple'));
+  bDark.addEventListener('click',()=>setTheme('dark'));
   // 저장된 취향 불러오기
   try{ const saved=localStorage.getItem('camp-theme'); if(saved) setTheme(saved); }catch(e){}
 
