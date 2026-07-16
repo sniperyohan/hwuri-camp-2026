@@ -618,7 +618,7 @@
       const t=it.querySelector('.time'); if(!t)return;
       const m=t.textContent.match(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/); if(!m)return;
       const s=+m[1]*60+ +m[2], e=+m[3]*60+ +m[4];
-      if(hm>=s&&hm<e){ it.classList.add('now'); nowItem=it;
+      if(hm>=s&&hm<e){ it.classList.add('now'); if(!nowItem) nowItem=it;
         // NOW 배지를 카드 맨 위에 표기
         it.insertAdjacentHTML('afterbegin','<span class="now-tag">🔴 NOW</span>'); }
     });
