@@ -92,7 +92,7 @@
   body[data-theme="soft"] .item::after{content:""; position:absolute; left:-15px; top:33px; bottom:-11px; width:2px; background:#e5ddd0;}
   body[data-theme="soft"] .item:last-child::after{display:none;}
   body[data-theme="soft"] .item:hover{transform:translateY(-3px) scale(1.008); box-shadow:0 10px 24px -6px rgba(120,100,80,.22);}
-  body[data-theme="soft"] .item.now{box-shadow:0 6px 20px -4px var(--theme); outline:2px solid var(--theme);}
+  body[data-theme="soft"] .item.now{box-shadow:0 6px 20px -4px rgba(255,45,85,.4); outline:2px solid #ff2d55; outline-offset:2px;}
   body[data-theme="soft"] .now-tag{background:var(--theme-deep);}
   body[data-theme="soft"] .time{color:var(--theme-deep);}
   body[data-theme="soft"] .title{color:#4a4038;}
@@ -129,7 +129,7 @@
   body[data-theme="simple"] .day-head .badge{font-size:16px; filter:grayscale(.3);}
   body[data-theme="simple"] .item{background:#fff; border:1px solid var(--line); border-radius:8px; border-left:3px solid transparent;}
   body[data-theme="simple"] .item:hover{border-left-color:var(--accent); box-shadow:0 4px 14px rgba(30,40,60,.07); transform:translateY(-1px);}
-  body[data-theme="simple"] .item.now{border-left-color:var(--accent); background:var(--accent-soft);}
+  body[data-theme="simple"] .item.now{border-left-color:#ff2d55; background:var(--accent-soft); outline:2px solid #ff2d55; outline-offset:2px;}
   body[data-theme="simple"] .now-tag{background:var(--accent); border-radius:4px;}
   body[data-theme="simple"] .time{color:var(--accent);}
   body[data-theme="simple"] .title{color:#1f2430; font-weight:700;}
@@ -164,7 +164,7 @@
   body[data-theme="dark"] .day-head .badge{font-size:16px;}
   body[data-theme="dark"] .item{background:#1a212a; border:1px solid var(--line); border-radius:10px; border-left:3px solid transparent;}
   body[data-theme="dark"] .item:hover{border-left-color:var(--accent); box-shadow:0 6px 18px rgba(0,0,0,.4); transform:translateY(-1px);}
-  body[data-theme="dark"] .item.now{border-left-color:var(--accent); background:var(--accent-soft);}
+  body[data-theme="dark"] .item.now{border-left-color:#ff2d55; background:var(--accent-soft); outline:2px solid #ff2d55; outline-offset:2px;}
   body[data-theme="dark"] .now-tag{background:var(--accent); color:#12161c; border-radius:4px;}
   body[data-theme="dark"] .time{color:var(--accent);}
   body[data-theme="dark"] .title{color:#eef3f9; font-weight:700;}
