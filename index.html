@@ -592,11 +592,23 @@
   }));
 
   // NOW 표시
+  // 패널 id별 실제 날짜 매핑 (월은 0부터: 6 = 7월)
+  const PANEL_DATE = {
+    d1:  [2026,6,16],   // 7/16 목
+    d2:  [2026,6,17],   // 7/17 금
+    d3:  [2026,6,18],   // 7/18 토 산저
+    d3b: [2026,6,18],   // 7/18 토 삼척
+    d4:  [2026,6,19],   // 7/19 주일 산저
+    d5:  [2026,6,19]    // 7/19 주일 삼척
+  };
   function markNow(panel){
     panel.querySelectorAll('.now-tag').forEach(e=>e.remove());
     panel.querySelectorAll('.item').forEach(i=>i.classList.remove('now'));
+    const pd=PANEL_DATE[panel.id];
+    if(!pd) return;               // 날짜 없는 탭(특강·조편성·방배정 등)은 표시 안 함
     const now=new Date();
-    if(now<new Date(2026,6,16)||now>new Date(2026,6,21)) return;
+    // 이 패널의 날짜가 오늘과 같을 때만 NOW 표시
+    if(now.getFullYear()!==pd[0] || now.getMonth()!==pd[1] || now.getDate()!==pd[2]) return;
     const hm=now.getHours()*60+now.getMinutes();
     panel.querySelectorAll('.item').forEach(it=>{
       const t=it.querySelector('.time'); if(!t)return;
