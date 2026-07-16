@@ -50,10 +50,10 @@
 
   .item{position:relative; padding:15px 17px; margin-bottom:11px; transition:transform .22s, box-shadow .22s, border-color .2s; opacity:0; transform:translateY(14px);}
   .item.show{opacity:1; transform:translateY(0);}
-  .now-tag{display:block; width:fit-content; font-size:12px; font-weight:900; color:#fff; background:#8b5cf6; padding:3px 12px; border-radius:12px; margin:0 0 8px 0; vertical-align:middle; letter-spacing:.5px; box-shadow:0 0 0 0 rgba(139,92,246,.6); animation:nowShake 1.1s ease-in-out infinite, nowPulse 1.6s ease-out infinite;}
+  .now-tag{display:block; width:fit-content; font-size:12px; font-weight:900; color:#fff; background:#a78bfa; padding:3px 12px; border-radius:12px; margin:0 0 8px 0; vertical-align:middle; letter-spacing:.5px; box-shadow:0 0 0 0 rgba(167,139,250,.6); animation:nowShake 1.1s ease-in-out infinite, nowPulse 1.6s ease-out infinite;}
   @keyframes nowShake{0%,100%{transform:rotate(0deg) translateX(0)}15%{transform:rotate(-6deg) translateX(-2px)}30%{transform:rotate(6deg) translateX(2px)}45%{transform:rotate(-4deg) translateX(-1px)}60%{transform:rotate(4deg) translateX(1px)}75%{transform:rotate(0deg) translateX(0)}}
-  @keyframes nowPulse{0%{box-shadow:0 0 0 0 rgba(139,92,246,.55)}70%{box-shadow:0 0 0 10px rgba(139,92,246,0)}100%{box-shadow:0 0 0 0 rgba(139,92,246,0)}}
-  .item.now{outline:2px solid #8b5cf6; outline-offset:2px;}
+  @keyframes nowPulse{0%{box-shadow:0 0 0 0 rgba(167,139,250,.55)}70%{box-shadow:0 0 0 10px rgba(167,139,250,0)}100%{box-shadow:0 0 0 0 rgba(167,139,250,0)}}
+  .item.now{outline:2px solid #a78bfa; outline-offset:2px;}
   .time{font-size:11.5px; font-weight:800; letter-spacing:.3px;}
   .title{font-size:16px; font-weight:800; margin:4px 0 7px; letter-spacing:-.3px;}
   .row{font-size:13px; line-height:1.6; margin:4px 0; display:flex; gap:7px; align-items:flex-start;}
@@ -92,7 +92,7 @@
   body[data-theme="soft"] .item::after{content:""; position:absolute; left:-15px; top:33px; bottom:-11px; width:2px; background:#e5ddd0;}
   body[data-theme="soft"] .item:last-child::after{display:none;}
   body[data-theme="soft"] .item:hover{transform:translateY(-3px) scale(1.008); box-shadow:0 10px 24px -6px rgba(120,100,80,.22);}
-  body[data-theme="soft"] .item.now{box-shadow:0 6px 20px -4px rgba(139,92,246,.4); outline:2px solid #8b5cf6; outline-offset:2px;}
+  body[data-theme="soft"] .item.now{box-shadow:0 6px 20px -4px rgba(167,139,250,.4); outline:2px solid #a78bfa; outline-offset:2px;}
   body[data-theme="soft"] .now-tag{background:var(--theme-deep);}
   body[data-theme="soft"] .time{color:var(--theme-deep);}
   body[data-theme="soft"] .title{color:#4a4038;}
@@ -129,7 +129,7 @@
   body[data-theme="simple"] .day-head .badge{font-size:16px; filter:grayscale(.3);}
   body[data-theme="simple"] .item{background:#fff; border:1px solid var(--line); border-radius:8px; border-left:3px solid transparent;}
   body[data-theme="simple"] .item:hover{border-left-color:var(--accent); box-shadow:0 4px 14px rgba(30,40,60,.07); transform:translateY(-1px);}
-  body[data-theme="simple"] .item.now{background:var(--accent-soft); outline:2px solid #8b5cf6; outline-offset:2px;}
+  body[data-theme="simple"] .item.now{background:var(--accent-soft); outline:2px solid #a78bfa; outline-offset:2px;}
   body[data-theme="simple"] .now-tag{background:var(--accent); border-radius:4px;}
   body[data-theme="simple"] .time{color:var(--accent);}
   body[data-theme="simple"] .title{color:#1f2430; font-weight:700;}
@@ -164,7 +164,7 @@
   body[data-theme="dark"] .day-head .badge{font-size:16px;}
   body[data-theme="dark"] .item{background:#1a212a; border:1px solid var(--line); border-radius:10px; border-left:3px solid transparent;}
   body[data-theme="dark"] .item:hover{border-left-color:var(--accent); box-shadow:0 6px 18px rgba(0,0,0,.4); transform:translateY(-1px);}
-  body[data-theme="dark"] .item.now{background:var(--accent-soft); outline:2px solid #8b5cf6; outline-offset:2px;}
+  body[data-theme="dark"] .item.now{background:var(--accent-soft); outline:2px solid #a78bfa; outline-offset:2px;}
   body[data-theme="dark"] .now-tag{background:var(--accent); color:#12161c; border-radius:4px;}
   body[data-theme="dark"] .time{color:var(--accent);}
   body[data-theme="dark"] .title{color:#eef3f9; font-weight:700;}
