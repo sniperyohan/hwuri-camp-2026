@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일정 관리자</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Pretendard',sans-serif; margin:0; padding:20px 14px 60px; background:#f4f5f8; color:#1f2430;}
+  .wrap{max-width:860px; margin:0 auto;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .sub{color:#8a909c; font-size:13px; margin-bottom:20px;}
+
+  /* 로그인 화면 */
+  #login{max-width:320px; margin:80px auto; background:#fff; border-radius:14px; padding:30px 26px; box-shadow:0 4px 20px rgba(0,0,0,.06); text-align:center;}
+  #login h2{font-size:17px; margin:0 0 16px;}
+  #login input{width:100%; padding:11px 12px; font-size:15px; border:1px solid #dde1e8; border-radius:8px; margin-bottom:12px; font-family:inherit;}
+  #login button{width:100%; padding:11px; font-size:14px; font-weight:700; color:#fff; background:#4a5b7c; border:none; border-radius:8px; cursor:pointer;}
+  #login .err{color:#d64545; font-size:12.5px; height:16px; margin-top:2px;}
+
+  /* 관리 화면 */
+  #app{display:none;}
+  .bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; background:#fff; padding:12px 14px; border-radius:12px;}
+  .bar label{font-size:13px; font-weight:600; color:#5c6270;}
+  select, input, textarea{font-family:inherit; font-size:14px; border:1px solid #dde1e8; border-radius:8px; padding:8px 10px;}
+  textarea{width:100%; min-height:70px; resize:vertical; line-height:1.5;}
+  .btn{border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer;}
+  .btn-primary{background:#4a5b7c; color:#fff;}
+  .btn-add{background:#5e8a68; color:#fff;}
+  .btn-del{background:#d64545; color:#fff;}
+  .btn-ghost{background:#eef1f6; color:#4a5b7c;}
+
+  .day-group{margin-bottom:22px;}
+  .day-title{font-size:15px; font-weight:800; margin:0 0 10px; padding-bottom:6px; border-bottom:2px solid #1f2430;}
+  .card{background:#fff; border:1px solid #e8eaee; border-radius:10px; padding:14px; margin-bottom:10px;}
+  .card .fields{display:grid; grid-template-columns:120px 1fr; gap:8px; align-items:start;}
+  .card .fields .full{grid-column:1 / -1;}
+  .card-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px;}
+  .loading{text-align:center; color:#8a909c; padding:40px;}
+  .hint{font-size:12px; color:#8a909c; margin-top:4px;}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login">
+  <h2>🔒 관리자 로그인</h2>
+  <input type="password" id="pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')tryLogin()">
+  <button onclick="tryLogin()">입장</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<!-- 관리 화면 -->
+<div id="app">
+  <div class="wrap">
+    <h1 id="campTitle">일정 관리자</h1>
+    <div class="sub" id="campSub"></div>
+
+    <div class="bar">
+      <label>날짜 추가:</label>
+      <input type="date" id="newDate">
+      <button class="btn btn-add" onclick="addItem()">＋ 항목 추가</button>
+      <button class="btn btn-ghost" onclick="location.reload()">↻ 새로고침</button>
+    </div>
+
+    <div id="list"><div class="loading">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script>
+let CAMP = null;
+
+function tryLogin(){
+  const v = document.getElementById('pw').value;
+  if(v === ADMIN_PW){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  }else{
+    document.getElementById('loginErr').textContent = '비밀번호가 틀렸습니다.';
+  }
+}
+
+async function init(){
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('c');
+  const list = document.getElementById('list');
+
+  if(!slug){
+    list.innerHTML = '<div class="loading">수련회를 지정해주세요. 예: ?c=hwuri-2026</div>';
+    return;
+  }
+
+  const { data: camp, error } = await sb.from('camps').select('*').eq('slug', slug).single();
+  if(error || !camp){
+    list.innerHTML = '<div class="loading">수련회를 찾을 수 없습니다.</div>';
+    return;
+  }
+  CAMP = camp;
+  document.getElementById('campTitle').textContent = (camp.title||'') + ' — 관리';
+  document.getElementById('campSub').textContent = camp.subtitle || '';
+  loadList();
+}
+
+async function loadList(){
+  const list = document.getElementById('list');
+  const { data: events, error } = await sb.from('events').select('*')
+    .eq('camp_id', CAMP.id)
+    .order('event_date',{ascending:true})
+    .order('sort_order',{ascending:true});
+  if(error){ list.innerHTML='<div class="loading">불러오기 실패</div>'; return; }
+
+  const byDate = {};
+  events.forEach(e=>{ (byDate[e.event_date] ||= []).push(e); });
+  const dates = Object.keys(byDate).sort();
+
+  if(dates.length===0){ list.innerHTML='<div class="loading">아직 일정이 없습니다. 위에서 추가하세요.</div>'; return; }
+
+  let html='';
+  dates.forEach(d=>{
+    html += `<div class="day-group"><div class="day-title">${d}</div>`;
+    byDate[d].forEach(e=>{
+      html += cardHtml(e);
+    });
+    html += `</div>`;
+  });
+  list.innerHTML = html;
+}
+
+function cardHtml(e){
+  return `<div class="card" data-id="${e.id}">
+    <div class="fields">
+      <label>날짜</label><input type="date" class="f-date" value="${e.event_date||''}">
+      <label>시간</label><input type="text" class="f-time" value="${escAttr(e.time)}" placeholder="예: 09:00-10:00">
+      <label>제목</label><input type="text" class="f-title" value="${escAttr(e.title)}" placeholder="일정 제목">
+      <label>순서</label><input type="number" class="f-sort" value="${e.sort_order??0}" style="width:90px;">
+      <label class="full">상세내용</label>
+      <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능">${escText(e.detail)}</textarea>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-primary" onclick="saveItem(this,${e.id})">💾 저장</button>
+      <button class="btn btn-del" onclick="delItem(${e.id})">🗑 삭제</button>
+    </div>
+  </div>`;
+}
+
+function escAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function escText(s){ return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function saveItem(btn, id){
+  const card = btn.closest('.card');
+  const upd = {
+    event_date: card.querySelector('.f-date').value,
+    time: card.querySelector('.f-time').value,
+    title: card.querySelector('.f-title').value,
+    sort_order: parseInt(card.querySelector('.f-sort').value)||0,
+    detail: card.querySelector('.f-detail').value
+  };
+  const { error } = await sb.from('events').update(upd).eq('id', id);
+  if(error){ alert('저장 실패: '+error.message); return; }
+  btn.textContent = '✔ 저장됨';
+  setTimeout(()=>btn.textContent='💾 저장', 1200);
+}
+
+async function delItem(id){
+  if(!confirm('이 항목을 삭제할까요?')) return;
+  const { error } = await sb.from('events').delete().eq('id', id);
+  if(error){ alert('삭제 실패: '+error.message); return; }
+  loadList();
+}
+
+async function addItem(){
+  const d = document.getElementById('newDate').value;
+  if(!d){ alert('먼저 날짜를 선택하세요.'); return; }
+  const ins = { camp_id: CAMP.id, event_date: d, time:'', title:'새 일정', detail:'', sort_order: 999 };
+  const { error } = await sb.from('events').insert(ins);
+  if(error){ alert('추가 실패: '+error.message); return; }
+  loadList();
+}
+</script>
+</body>
+</html>
