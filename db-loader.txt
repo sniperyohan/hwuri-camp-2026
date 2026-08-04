@@ -1,0 +1,23 @@
+  // ===== Supabase 일정 불러오기 =====
+  const SB_URL='https://gaigimhrlyvosgbwauxi.supabase.co';
+  const SB_KEY='여기에_PUBLISHABLE_KEY';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  async function loadSchedule(){
+    const {data, error} = await sb.from('events').select('*').order('panel',{ascending:true}).order('sort_order',{ascending:true});
+    if(error){ console.error('일정 로딩 오류:', error); reveal(document.getElementById('d1')); return; }
+    const byPanel={};
+    data.forEach(r=>{ (byPanel[r.panel]=byPanel[r.panel]||[]).push(r); });
+    for(const pid in byPanel){
+      const panel=document.getElementById(pid);
+      if(!panel) continue;
+      panel.querySelectorAll('.item').forEach(el=>el.remove());
+      byPanel[pid].forEach(r=>{
+        const detail = r.detail ? '<div class="row"><span class="ic">📌</span><span>'+r.detail+'</span></div>' : '';
+        panel.insertAdjacentHTML('beforeend',
+          '<div class="item"><div class="time">'+r.time+'</div><div class="title">'+r.title+'</div>'+detail+'</div>');
+      });
+    }
+    const active=document.querySelector('.panel.active') || document.getElementById('d1');
+    reveal(active);
+  }
+  loadSchedule();

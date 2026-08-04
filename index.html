@@ -182,6 +182,7 @@
   body[data-theme="dark"] .egg{background:#1e2a3a; color:#7fb0e0; border-radius:10px; border:1px solid var(--line);}
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body data-theme="soft">
 <div class="wrap">
@@ -665,7 +666,29 @@
   try{ const saved=localStorage.getItem('camp-theme'); if(saved) setTheme(saved); }catch(e){}
 
   // 첫 화면
-  reveal(document.getElementById('d1'));
+  // ===== Supabase 일정 불러오기 =====
+  const SB_URL='https://gaigimhrlyvosgbwauxi.supabase.co';
+  const SB_KEY='sb_publishable_XdNI8L7FS52uhLvt2xSW1Q_OGtxfn9S';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  async function loadSchedule(){
+    const {data, error} = await sb.from('events').select('*').order('panel',{ascending:true}).order('sort_order',{ascending:true});
+    if(error){ console.error('일정 로딩 오류:', error); reveal(document.getElementById('d1')); return; }
+    const byPanel={};
+    data.forEach(r=>{ (byPanel[r.panel]=byPanel[r.panel]||[]).push(r); });
+    for(const pid in byPanel){
+      const panel=document.getElementById(pid);
+      if(!panel) continue;
+      panel.querySelectorAll('.item').forEach(el=>el.remove());
+      byPanel[pid].forEach(r=>{
+        const detail = r.detail ? '<div class="row"><span class="ic">📌</span><span>'+r.detail+'</span></div>' : '';
+        panel.insertAdjacentHTML('beforeend',
+          '<div class="item"><div class="time">'+r.time+'</div><div class="title">'+r.title+'</div>'+detail+'</div>');
+      });
+    }
+    const active=document.querySelector('.panel.active') || document.getElementById('d1');
+    reveal(active);
+  }
+  loadSchedule();
 </script>
 </body>
 </html>
