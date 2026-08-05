@@ -71,6 +71,16 @@
       <button class="btn btn-logout" onclick="logout()">로그아웃</button>
     </div>
 
+    <div class="card" id="campEdit" style="display:none;">
+      <div class="fields">
+        <label>수련회 제목</label><input type="text" id="ct" placeholder="예: 행복한 우리 교회">
+        <label>부제목</label><input type="text" id="cs" placeholder="예: 삼척 여름 수련회">
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" onclick="saveCamp()">💾 제목 저장</button>
+      </div>
+    </div>
+
     <div class="tabs" id="tabs"></div>
 
     <div class="bar">
@@ -124,7 +134,21 @@ async function init(){
   CAMP = camp;
   document.getElementById('campTitle').textContent = (camp.title||'') + ' — 관리';
   document.getElementById('campSub').textContent = camp.subtitle || '';
+  document.getElementById('ct').value = camp.title || '';
+  document.getElementById('cs').value = camp.subtitle || '';
+  document.getElementById('campEdit').style.display = '';
   loadList();
+}
+
+async function saveCamp(){
+  const title = document.getElementById('ct').value;
+  const subtitle = document.getElementById('cs').value;
+  const { error } = await sb.from('camps').update({ title, subtitle }).eq('id', CAMP.id);
+  if(error){ alert('제목 저장 실패: '+error.message); return; }
+  CAMP.title = title; CAMP.subtitle = subtitle;
+  document.getElementById('campTitle').textContent = title + ' — 관리';
+  document.getElementById('campSub').textContent = subtitle;
+  alert('✔ 제목이 저장되었습니다');
 }
 
 async function loadList(){
@@ -178,7 +202,6 @@ function cardHtml(e){
   const picks = EMOJIS.map(em=>`<span class="emoji-pick" onclick="addEmoji(${e.id},'${em}')">${em}</span>`).join('');
   return `<div class="card" data-id="${e.id}">
     <div class="fields">
-      <label>날짜</label><input type="date" class="f-date" value="${e.event_date||''}">
       <label>시간</label><input type="text" class="f-time" value="${escAttr(e.time)}" placeholder="예: 09:00-10:00">
       <label>제목</label><input type="text" class="f-title" value="${escAttr(e.title)}" placeholder="일정 제목" onfocus="setActive(this)">
       <label class="full">상세내용</label>
@@ -216,7 +239,7 @@ function escText(s){ return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function saveItem(btn, id){
   const card = btn.closest('.card');
   const upd = {
-    event_date: card.querySelector('.f-date').value,
+    event_date: CURRENT,
     time: card.querySelector('.f-time').value,
     title: card.querySelector('.f-title').value,
     badge: '',
