@@ -15,23 +15,26 @@
   .sub{color:#8a909c; font-size:13px; margin-bottom:20px;}
 
   /* 로그인 화면 */
-  #login{max-width:320px; margin:80px auto; background:#fff; border-radius:14px; padding:30px 26px; box-shadow:0 4px 20px rgba(0,0,0,.06); text-align:center;}
+  #login{max-width:340px; margin:80px auto; background:#fff; border-radius:14px; padding:30px 26px; box-shadow:0 4px 20px rgba(0,0,0,.06); text-align:center;}
   #login h2{font-size:17px; margin:0 0 16px;}
   #login input{width:100%; padding:11px 12px; font-size:15px; border:1px solid #dde1e8; border-radius:8px; margin-bottom:12px; font-family:inherit;}
   #login button{width:100%; padding:11px; font-size:14px; font-weight:700; color:#fff; background:#4a5b7c; border:none; border-radius:8px; cursor:pointer;}
-  #login .err{color:#d64545; font-size:12.5px; height:16px; margin-top:2px;}
+  #login .err{color:#d64545; font-size:12.5px; min-height:16px; margin-top:2px;}
 
   /* 관리 화면 */
   #app{display:none;}
-  .bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; background:#fff; padding:12px 14px; border-radius:12px;}
-  .bar label{font-size:13px; font-weight:600; color:#5c6270;}
-  select, input, textarea{font-family:inherit; font-size:14px; border:1px solid #dde1e8; border-radius:8px; padding:8px 10px;}
-  textarea{width:100%; min-height:70px; resize:vertical; line-height:1.5;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
   .btn{border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer;}
   .btn-primary{background:#4a5b7c; color:#fff;}
   .btn-add{background:#5e8a68; color:#fff;}
   .btn-del{background:#d64545; color:#fff;}
   .btn-ghost{background:#eef1f6; color:#4a5b7c;}
+  .btn-logout{background:#e8eaee; color:#5c6270;}
+
+  .bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; background:#fff; padding:12px 14px; border-radius:12px;}
+  .bar label{font-size:13px; font-weight:600; color:#5c6270;}
+  select, input, textarea{font-family:inherit; font-size:14px; border:1px solid #dde1e8; border-radius:8px; padding:8px 10px;}
+  textarea{width:100%; min-height:70px; resize:vertical; line-height:1.5;}
 
   .day-group{margin-bottom:22px;}
   .day-title{font-size:15px; font-weight:800; margin:0 0 10px; padding-bottom:6px; border-bottom:2px solid #1f2430;}
@@ -40,7 +43,6 @@
   .card .fields .full{grid-column:1 / -1;}
   .card-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px;}
   .loading{text-align:center; color:#8a909c; padding:40px;}
-  .hint{font-size:12px; color:#8a909c; margin-top:4px;}
 </style>
 </head>
 <body>
@@ -48,22 +50,28 @@
 <!-- 로그인 -->
 <div id="login">
   <h2>🔒 관리자 로그인</h2>
-  <input type="password" id="pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')tryLogin()">
-  <button onclick="tryLogin()">입장</button>
+  <input type="email" id="email" placeholder="이메일" autocomplete="username">
+  <input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()">
+  <button onclick="tryLogin()">로그인</button>
   <div class="err" id="loginErr"></div>
 </div>
 
 <!-- 관리 화면 -->
 <div id="app">
   <div class="wrap">
-    <h1 id="campTitle">일정 관리자</h1>
-    <div class="sub" id="campSub"></div>
+    <div class="topbar">
+      <div>
+        <h1 id="campTitle">일정 관리자</h1>
+        <div class="sub" id="campSub"></div>
+      </div>
+      <button class="btn btn-logout" onclick="logout()">로그아웃</button>
+    </div>
 
     <div class="bar">
       <label>날짜 추가:</label>
       <input type="date" id="newDate">
       <button class="btn btn-add" onclick="addItem()">＋ 항목 추가</button>
-      <button class="btn btn-ghost" onclick="location.reload()">↻ 새로고침</button>
+      <button class="btn btn-ghost" onclick="loadList()">↻ 새로고침</button>
     </div>
 
     <div id="list"><div class="loading">불러오는 중...</div></div>
@@ -73,15 +81,35 @@
 <script>
 let CAMP = null;
 
-function tryLogin(){
-  const v = document.getElementById('pw').value;
-  if(v === ADMIN_PW){
-    document.getElementById('login').style.display='none';
-    document.getElementById('app').style.display='block';
-    init();
-  }else{
-    document.getElementById('loginErr').textContent = '비밀번호가 틀렸습니다.';
+// 페이지 열릴 때 이미 로그인돼 있으면 바로 관리화면
+(async function(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) showApp();
+})();
+
+async function tryLogin(){
+  const email = document.getElementById('email').value.trim();
+  const pw = document.getElementById('pw').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '로그인 중...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if(error){
+    errEl.textContent = '로그인 실패: 이메일/비밀번호를 확인하세요.';
+    return;
   }
+  errEl.textContent = '';
+  showApp();
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function showApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  init();
 }
 
 async function init(){
@@ -107,6 +135,7 @@ async function init(){
 
 async function loadList(){
   const list = document.getElementById('list');
+  list.innerHTML = '<div class="loading">불러오는 중...</div>';
   const { data: events, error } = await sb.from('events').select('*')
     .eq('camp_id', CAMP.id)
     .order('event_date',{ascending:true})
@@ -122,9 +151,7 @@ async function loadList(){
   let html='';
   dates.forEach(d=>{
     html += `<div class="day-group"><div class="day-title">${d}</div>`;
-    byDate[d].forEach(e=>{
-      html += cardHtml(e);
-    });
+    byDate[d].forEach(e=>{ html += cardHtml(e); });
     html += `</div>`;
   });
   list.innerHTML = html;
