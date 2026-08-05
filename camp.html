@@ -23,6 +23,17 @@
   .hero h1{margin:0; font-weight:800; cursor:pointer; transition:.2s;}
   .hero h1:active{transform:scale(.96);}
   .hero .sub{margin-top:5px; font-weight:500;}
+  .dday{display:inline-block; margin-top:12px; padding:8px 20px; font-size:14px; font-weight:700; color:#fff; border-radius:30px;}
+  .prog{max-width:340px; margin:16px auto 4px;}
+  .prog-track{height:7px; border-radius:10px; overflow:hidden; background:rgba(0,0,0,.08);}
+  .prog-fill{height:100%; width:0; border-radius:10px; transition:width 1.2s ease;}
+  .prog-txt{text-align:center; font-size:11.5px; margin-top:5px; font-weight:600; opacity:.75;}
+  body[data-theme="soft"] .dday{background:#5e8a68;}
+  body[data-theme="soft"] .prog-fill{background:#5e8a68;}
+  body[data-theme="simple"] .dday{background:#4a5b7c;}
+  body[data-theme="simple"] .prog-fill{background:#4a5b7c;}
+  body[data-theme="dark"] .dday{background:#7fb0e0; color:#12161c;}
+  body[data-theme="dark"] .prog-fill{background:#7fb0e0;}
 
   .tabs{display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin:20px 0 18px;}
   .tab{border:none; padding:9px 15px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:.2s;}
@@ -132,6 +143,11 @@
     <span class="cross">✝</span>
     <h1 id="camp-title">일정</h1>
     <div class="sub" id="camp-sub"></div>
+    <div class="dday" id="dday" style="display:none;"></div>
+    <div class="prog" id="prog" style="display:none;">
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-txt" id="progTxt"></div>
+    </div>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -191,6 +207,57 @@
   const byDate = {};
   events.forEach(e=>{ (byDate[e.event_date] ||= []).push(e); });
   const dates = Object.keys(byDate).sort();
+
+  function updateProgress(){
+    const ddayEl = document.getElementById('dday');
+    const progEl = document.getElementById('prog');
+    const fillEl = document.getElementById('progFill');
+    const txtEl  = document.getElementById('progTxt');
+    if(dates.length === 0) return;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(dates[0] + 'T00:00:00');
+    const end   = new Date(dates[dates.length-1] + 'T00:00:00');
+
+    // 시작 전: D-day 카운트
+    if(today < start){
+      const diff = Math.ceil((start - today) / 86400000);
+      ddayEl.textContent = 'D-' + diff;
+      ddayEl.style.display = 'inline-block';
+      progEl.style.display = 'none';
+      return;
+    }
+    // 종료 후
+    if(today > end){
+      ddayEl.textContent = '수련회 종료 🙏';
+      ddayEl.style.display = 'inline-block';
+      progEl.style.display = 'none';
+      return;
+    }
+    // 기간 중: 며칠째 + 오늘 시간 진행률
+    const dayNum = Math.round((today - start) / 86400000) + 1;
+    ddayEl.textContent = dayNum + '일차 · 진행 중';
+    ddayEl.style.display = 'inline-block';
+
+    const todayList = (byDate[dates.find(d=>d===now.toISOString().slice(0,10))] || byDate[dates[0]] || []);
+    const times = (byDate[now.toISOString().slice(0,10)] || []).map(e=>e.time).filter(Boolean);
+    if(times.length >= 1){
+      const toMin = t => { const [h,m] = t.split(/[:\-~]/).map(Number); return h*60 + (m||0); };
+      const first = toMin(times[0]);
+      const lastT = times[times.length-1];
+      const last  = toMin(lastT.includes('-')||lastT.includes('~') ? lastT.split(/[\-~]/)[1] : lastT);
+      const nowMin = now.getHours()*60 + now.getMinutes();
+      let pct = ((nowMin - first) / (last - first)) * 100;
+      pct = Math.max(0, Math.min(100, pct));
+      fillEl.style.width = pct + '%';
+      txtEl.textContent = '오늘 일정 ' + Math.round(pct) + '% 진행';
+      progEl.style.display = 'block';
+    } else {
+      progEl.style.display = 'none';
+    }
+  }
+  updateProgress();
   const WEEK = ['일','월','화','수','목','금','토'];
   const tabsEl = document.getElementById('tabs');
   const todayStr = new Date().toISOString().slice(0,10);

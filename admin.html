@@ -14,14 +14,12 @@
   h1{font-size:20px; margin:0 0 4px;}
   .sub{color:#8a909c; font-size:13px; margin-bottom:20px;}
 
-  /* 로그인 화면 */
   #login{max-width:340px; margin:80px auto; background:#fff; border-radius:14px; padding:30px 26px; box-shadow:0 4px 20px rgba(0,0,0,.06); text-align:center;}
   #login h2{font-size:17px; margin:0 0 16px;}
   #login input{width:100%; padding:11px 12px; font-size:15px; border:1px solid #dde1e8; border-radius:8px; margin-bottom:12px; font-family:inherit;}
   #login button{width:100%; padding:11px; font-size:14px; font-weight:700; color:#fff; background:#4a5b7c; border:none; border-radius:8px; cursor:pointer;}
   #login .err{color:#d64545; font-size:12.5px; min-height:16px; margin-top:2px;}
 
-  /* 관리 화면 */
   #app{display:none;}
   .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
   .btn{border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer;}
@@ -31,23 +29,30 @@
   .btn-ghost{background:#eef1f6; color:#4a5b7c;}
   .btn-logout{background:#e8eaee; color:#5c6270;}
 
-  .bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; background:#fff; padding:12px 14px; border-radius:12px;}
-  .bar label{font-size:13px; font-weight:600; color:#5c6270;}
   select, input, textarea{font-family:inherit; font-size:14px; border:1px solid #dde1e8; border-radius:8px; padding:8px 10px;}
   textarea{width:100%; min-height:70px; resize:vertical; line-height:1.5;}
 
-  .day-group{margin-bottom:22px;}
-  .day-title{font-size:15px; font-weight:800; margin:0 0 10px; padding-bottom:6px; border-bottom:2px solid #1f2430;}
+  /* 날짜 탭 */
+  .tabs{display:flex; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px;}
+  .tab{white-space:nowrap; background:#fff; border:1px solid #dde1e8; border-radius:20px; padding:8px 15px; font-size:13px; font-weight:700; cursor:pointer; color:#8a909c;}
+  .tab.active{background:#4a5b7c; color:#fff; border-color:#4a5b7c;}
+  .tab.addtab{background:#eef4ee; color:#5e8a68; border-color:#cfe0cf;}
+
+  .bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; background:#fff; padding:12px 14px; border-radius:12px;}
+  .bar label{font-size:13px; font-weight:600; color:#5c6270;}
+
   .card{background:#fff; border:1px solid #e8eaee; border-radius:10px; padding:14px; margin-bottom:10px;}
-  .card .fields{display:grid; grid-template-columns:120px 1fr; gap:8px; align-items:start;}
+  .card .fields{display:grid; grid-template-columns:110px 1fr; gap:8px; align-items:start;}
   .card .fields .full{grid-column:1 / -1;}
+  .emoji-row{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .emoji-pick{cursor:pointer; font-size:18px; background:#f4f5f8; border:1px solid #e8eaee; border-radius:6px; padding:2px 6px;}
+  .emoji-pick:hover{background:#e8eaee;}
   .card-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px;}
   .loading{text-align:center; color:#8a909c; padding:40px;}
 </style>
 </head>
 <body>
 
-<!-- 로그인 -->
 <div id="login">
   <h2>🔒 관리자 로그인</h2>
   <input type="email" id="email" placeholder="이메일" autocomplete="username">
@@ -56,7 +61,6 @@
   <div class="err" id="loginErr"></div>
 </div>
 
-<!-- 관리 화면 -->
 <div id="app">
   <div class="wrap">
     <div class="topbar">
@@ -67,10 +71,10 @@
       <button class="btn btn-logout" onclick="logout()">로그아웃</button>
     </div>
 
+    <div class="tabs" id="tabs"></div>
+
     <div class="bar">
-      <label>날짜 추가:</label>
-      <input type="date" id="newDate">
-      <button class="btn btn-add" onclick="addItem()">＋ 항목 추가</button>
+      <button class="btn btn-add" onclick="addItem()">＋ 이 날짜에 항목 추가</button>
       <button class="btn btn-ghost" onclick="loadList()">↻ 새로고침</button>
     </div>
 
@@ -80,8 +84,11 @@
 
 <script>
 let CAMP = null;
+let ALL = [];          // 전체 일정
+let DATES = [];        // 날짜 목록
+let CURRENT = null;    // 현재 선택된 날짜
+const EMOJIS = ['🌿','🚗','🍚','🙏','⛪','🛏️','🎤','📖','🎮','☀️','🌙','🔥','🎯','📢'];
 
-// 페이지 열릴 때 이미 로그인돼 있으면 바로 관리화면
 (async function(){
   const { data:{ session } } = await sb.auth.getSession();
   if(session) showApp();
@@ -93,18 +100,12 @@ async function tryLogin(){
   const errEl = document.getElementById('loginErr');
   errEl.textContent = '로그인 중...';
   const { error } = await sb.auth.signInWithPassword({ email, password: pw });
-  if(error){
-    errEl.textContent = '로그인 실패: 이메일/비밀번호를 확인하세요.';
-    return;
-  }
+  if(error){ errEl.textContent = '로그인 실패: 이메일/비밀번호를 확인하세요.'; return; }
   errEl.textContent = '';
   showApp();
 }
 
-async function logout(){
-  await sb.auth.signOut();
-  location.reload();
-}
+async function logout(){ await sb.auth.signOut(); location.reload(); }
 
 function showApp(){
   document.getElementById('login').style.display='none';
@@ -116,17 +117,10 @@ async function init(){
   const params = new URLSearchParams(location.search);
   const slug = params.get('c');
   const list = document.getElementById('list');
-
-  if(!slug){
-    list.innerHTML = '<div class="loading">수련회를 지정해주세요. 예: ?c=hwuri-2026</div>';
-    return;
-  }
+  if(!slug){ list.innerHTML='<div class="loading">수련회를 지정해주세요. 예: ?c=hwuri-2026</div>'; return; }
 
   const { data: camp, error } = await sb.from('camps').select('*').eq('slug', slug).single();
-  if(error || !camp){
-    list.innerHTML = '<div class="loading">수련회를 찾을 수 없습니다.</div>';
-    return;
-  }
+  if(error || !camp){ list.innerHTML='<div class="loading">수련회를 찾을 수 없습니다.</div>'; return; }
   CAMP = camp;
   document.getElementById('campTitle').textContent = (camp.title||'') + ' — 관리';
   document.getElementById('campSub').textContent = camp.subtitle || '';
@@ -134,44 +128,86 @@ async function init(){
 }
 
 async function loadList(){
-  const list = document.getElementById('list');
-  list.innerHTML = '<div class="loading">불러오는 중...</div>';
   const { data: events, error } = await sb.from('events').select('*')
     .eq('camp_id', CAMP.id)
     .order('event_date',{ascending:true})
     .order('sort_order',{ascending:true});
-  if(error){ list.innerHTML='<div class="loading">불러오기 실패</div>'; return; }
+  if(error){ document.getElementById('list').innerHTML='<div class="loading">불러오기 실패</div>'; return; }
 
-  const byDate = {};
-  events.forEach(e=>{ (byDate[e.event_date] ||= []).push(e); });
-  const dates = Object.keys(byDate).sort();
+  ALL = events;
+  DATES = [...new Set(events.map(e=>e.event_date))].sort();
+  if(!CURRENT || !DATES.includes(CURRENT)) CURRENT = DATES[0] || null;
+  renderTabs();
+  renderDay();
+}
 
-  if(dates.length===0){ list.innerHTML='<div class="loading">아직 일정이 없습니다. 위에서 추가하세요.</div>'; return; }
+const WEEK = ['일','월','화','수','목','금','토'];
+function fmtTab(d){ const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}(${WEEK[dt.getDay()]})`; }
 
+function renderTabs(){
+  const t = document.getElementById('tabs');
   let html='';
-  dates.forEach(d=>{
-    html += `<div class="day-group"><div class="day-title">${d}</div>`;
-    byDate[d].forEach(e=>{ html += cardHtml(e); });
-    html += `</div>`;
+  DATES.forEach(d=>{
+    html += `<button class="tab${d===CURRENT?' active':''}" onclick="selectDay('${d}')">${fmtTab(d)}</button>`;
   });
-  list.innerHTML = html;
+  html += `<button class="tab addtab" onclick="addNewDate()">＋ 날짜</button>`;
+  t.innerHTML = html;
+}
+
+function selectDay(d){ CURRENT=d; renderTabs(); renderDay(); }
+
+function addNewDate(){
+  const d = prompt('새 날짜를 입력하세요 (YYYY-MM-DD)', CURRENT || '');
+  if(!d) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ alert('YYYY-MM-DD 형식으로 입력하세요.'); return; }
+  CURRENT = d;
+  if(!DATES.includes(d)){ DATES.push(d); DATES.sort(); }
+  renderTabs();
+  renderDay();
+}
+
+function renderDay(){
+  const list = document.getElementById('list');
+  if(!CURRENT){ list.innerHTML='<div class="loading">일정이 없습니다. ＋날짜로 시작하세요.</div>'; return; }
+  const items = ALL.filter(e=>e.event_date===CURRENT);
+  if(items.length===0){ list.innerHTML='<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
+  list.innerHTML = items.map(cardHtml).join('');
 }
 
 function cardHtml(e){
+  const picks = EMOJIS.map(em=>`<span class="emoji-pick" onclick="addEmoji(${e.id},'${em}')">${em}</span>`).join('');
   return `<div class="card" data-id="${e.id}">
     <div class="fields">
       <label>날짜</label><input type="date" class="f-date" value="${e.event_date||''}">
       <label>시간</label><input type="text" class="f-time" value="${escAttr(e.time)}" placeholder="예: 09:00-10:00">
-      <label>제목</label><input type="text" class="f-title" value="${escAttr(e.title)}" placeholder="일정 제목">
-      <label>순서</label><input type="number" class="f-sort" value="${e.sort_order??0}" style="width:90px;">
+      <label>제목</label><input type="text" class="f-title" value="${escAttr(e.title)}" placeholder="일정 제목" onfocus="setActive(this)">
       <label class="full">상세내용</label>
-      <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능">${escText(e.detail)}</textarea>
+      <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능" onfocus="setActive(this)">${escText(e.detail)}</textarea>
+      <label class="full">이모지 넣기 <span style="font-weight:400;color:#8a90a0;font-size:12px;">(제목이나 상세 칸을 클릭한 뒤 이모지를 누르세요)</span></label>
+      <div class="emoji-row full">${picks}</div>
+      <label>순서</label><input type="number" class="f-sort" value="${e.sort_order??0}" style="width:90px;">
     </div>
     <div class="card-actions">
       <button class="btn btn-primary" onclick="saveItem(this,${e.id})">💾 저장</button>
       <button class="btn btn-del" onclick="delItem(${e.id})">🗑 삭제</button>
     </div>
   </div>`;
+}
+
+let ACTIVE_FIELD = null;
+function setActive(el){ ACTIVE_FIELD = el; }
+function addEmoji(id, em){
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  // 이 카드 안의 필드가 활성 상태면 그 커서 위치에 삽입, 아니면 제목칸 끝에 삽입
+  let el = ACTIVE_FIELD;
+  if(!el || !card.contains(el)){ el = card.querySelector('.f-title'); }
+  const s = el.selectionStart ?? el.value.length;
+  const eEnd = el.selectionEnd ?? el.value.length;
+  el.value = el.value.slice(0, s) + em + el.value.slice(eEnd);
+  el.focus();
+  const pos = s + em.length;
+  el.setSelectionRange(pos, pos);
+  ACTIVE_FIELD = el;
 }
 
 function escAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
@@ -183,13 +219,14 @@ async function saveItem(btn, id){
     event_date: card.querySelector('.f-date').value,
     time: card.querySelector('.f-time').value,
     title: card.querySelector('.f-title').value,
+    badge: '',
     sort_order: parseInt(card.querySelector('.f-sort').value)||0,
     detail: card.querySelector('.f-detail').value
   };
   const { error } = await sb.from('events').update(upd).eq('id', id);
   if(error){ alert('저장 실패: '+error.message); return; }
   btn.textContent = '✔ 저장됨';
-  setTimeout(()=>btn.textContent='💾 저장', 1200);
+  setTimeout(()=>{ btn.textContent='💾 저장'; loadList(); }, 800);
 }
 
 async function delItem(id){
@@ -200,9 +237,8 @@ async function delItem(id){
 }
 
 async function addItem(){
-  const d = document.getElementById('newDate').value;
-  if(!d){ alert('먼저 날짜를 선택하세요.'); return; }
-  const ins = { camp_id: CAMP.id, event_date: d, time:'', title:'새 일정', detail:'', sort_order: 999 };
+  if(!CURRENT){ alert('먼저 ＋날짜로 날짜를 정하세요.'); return; }
+  const ins = { camp_id: CAMP.id, event_date: CURRENT, time:'', title:'새 일정', badge:'', detail:'', sort_order: 999 };
   const { error } = await sb.from('events').insert(ins);
   if(error){ alert('추가 실패: '+error.message); return; }
   loadList();
