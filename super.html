@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>슈퍼관리자 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Pretendard',sans-serif; margin:0; padding:20px 14px 60px; background:#f4f5f8; color:#1f2430;}
+  .wrap{max-width:860px; margin:0 auto;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .sub{color:#8a909c; font-size:13px; margin-bottom:20px;}
+
+  #login{max-width:340px; margin:80px auto; background:#fff; border-radius:14px; padding:30px 26px; box-shadow:0 4px 20px rgba(0,0,0,.06); text-align:center;}
+  #login h2{font-size:17px; margin:0 0 16px;}
+  #login input{width:100%; padding:11px 12px; font-size:15px; border:1px solid #dde1e8; border-radius:8px; margin-bottom:12px; font-family:inherit;}
+  #login button{width:100%; padding:11px; font-size:14px; font-weight:700; color:#fff; background:#4a5b7c; border:none; border-radius:8px; cursor:pointer;}
+  #login .err{color:#d64545; font-size:12.5px; min-height:16px; margin-top:2px;}
+
+  #app{display:none;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;}
+  .btn{border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block;}
+  .btn-primary{background:#4a5b7c; color:#fff;}
+  .btn-view{background:#5e8a68; color:#fff;}
+  .btn-ghost{background:#eef1f6; color:#4a5b7c;}
+  .btn-logout{background:#e8eaee; color:#5c6270;}
+
+  .card{background:#fff; border-radius:14px; padding:18px 20px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.04);}
+  .card h3{margin:0 0 3px; font-size:16px;}
+  .card .slug{color:#8a909c; font-size:12.5px; margin-bottom:12px;}
+  .card .row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px;}
+  .card label{font-size:12.5px; color:#8a909c; font-weight:700;}
+  select{font-family:inherit; font-size:13.5px; border:1px solid #dde1e8; border-radius:8px; padding:7px 10px;}
+  .loading{text-align:center; color:#8a909c; padding:40px 0;}
+  .newcamp{text-align:center; margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 로그인 -->
+  <div id="login">
+    <h2>🔑 슈퍼관리자 로그인</h2>
+    <input type="email" id="email" placeholder="이메일" autocomplete="username">
+    <input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password">
+    <button onclick="tryLogin()">로그인</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <!-- 대시보드 -->
+  <div id="app">
+    <div class="topbar">
+      <div>
+        <h1>🏛 슈퍼관리자 대시보드</h1>
+        <div class="sub" id="whoami"></div>
+      </div>
+      <button class="btn btn-logout" onclick="logout()">로그아웃</button>
+    </div>
+    <div id="list"><div class="loading">불러오는 중...</div></div>
+    <div class="newcamp">
+      <a class="btn btn-primary" href="new.html">＋ 새 수련회 만들기</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPER_ADMIN = 'bcc871ee-6e51-4f24-92d9-b4a72572135c';
+let ACCOUNTS = [];   // account_labels 목록
+
+// 세션 있으면 바로 진입
+(async function(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) enter();
+})();
+
+async function tryLogin(){
+  const email = document.getElementById('email').value.trim();
+  const pw = document.getElementById('pw').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '로그인 중...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if(error){ errEl.textContent = '로그인 실패: 이메일/비밀번호를 확인하세요.'; return; }
+  errEl.textContent = '';
+  enter();
+}
+
+async function logout(){ await sb.auth.signOut(); location.reload(); }
+
+// 슈퍼관리자만 통과
+async function enter(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user || user.id !== SUPER_ADMIN){
+    alert('🔒 슈퍼관리자 전용 페이지입니다.\n\n권한이 없는 계정입니다.');
+    await sb.auth.signOut();
+    location.href = location.pathname;
+    return;
+  }
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('whoami').textContent = user.email + ' 로 로그인됨';
+  loadDashboard();
+}
+
+async function loadDashboard(){
+  // 계정 목록
+  const { data: accs } = await sb.from('account_labels').select('*').order('label');
+  ACCOUNTS = accs || [];
+
+  // 캠프 목록
+  const { data: camps, error } = await sb.from('camps').select('*').order('id');
+  const list = document.getElementById('list');
+  if(error){ list.innerHTML='<div class="loading">캠프를 불러오지 못했습니다.</div>'; return; }
+  if(!camps || !camps.length){ list.innerHTML='<div class="loading">아직 수련회가 없습니다.</div>'; return; }
+
+  list.innerHTML = camps.map(c => cardHtml(c)).join('');
+}
+
+function labelOf(uuid){
+  const a = ACCOUNTS.find(x => x.user_id === uuid);
+  return a ? a.label : '(미지정)';
+}
+
+function cardHtml(c){
+  const opts = ['<option value="">(주인 없음)</option>']
+    .concat(ACCOUNTS.map(a =>
+      `<option value="${a.user_id}" ${a.user_id===c.owner?'selected':''}>${a.label}</option>`
+    )).join('');
+  return `
+    <div class="card">
+      <h3>${c.title || '(제목 없음)'}</h3>
+      <div class="slug">?c=${c.slug}</div>
+      <div class="row">
+        <a class="btn btn-primary" href="admin.html?c=${c.slug}">⚙ 관리</a>
+        <a class="btn btn-view" href="camp.html?c=${c.slug}" target="_blank">👁 뷰어</a>
+      </div>
+      <div class="row">
+        <label>담당 계정</label>
+        <select onchange="changeOwner(${c.id}, this.value)">${opts}</select>
+      </div>
+    </div>`;
+}
+
+async function changeOwner(campId, newOwner){
+  const owner = newOwner || null;
+  const { error } = await sb.from('camps').update({ owner }).eq('id', campId).select();
+  if(error){ alert('변경 실패: ' + error.message); return; }
+  alert('담당 계정이 변경되었습니다.');
+  loadDashboard();
+}
+</script>
+</body>
+</html>
