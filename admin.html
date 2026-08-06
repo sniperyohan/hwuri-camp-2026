@@ -152,7 +152,7 @@ async function init(){
   const SUPER_ADMIN = 'bcc871ee-6e51-4f24-92d9-b4a72572135c';
   const { data:{ user } } = await sb.auth.getUser();
   if(!user || (camp.owner !== user.id && user.id !== SUPER_ADMIN)){
-    alert('🔒 이 수련회의 관리 권한이 없는 계정입니다.\n\n담당 수련회 링크로 다시 로그인해 주세요.');
+    alert('🔒 이 계정은 관리 권한이 없습니다.\n\n담당 계정으로 다시 로그인해 주세요.');
     await sb.auth.signOut();
     location.href = location.pathname + location.search;
     return;
