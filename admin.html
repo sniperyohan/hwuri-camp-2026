@@ -191,7 +191,7 @@ async function loadList(){
   if(error){ document.getElementById('list').innerHTML='<div class="loading">불러오기 실패</div>'; return; }
 
   ALL = events;
-  DATES = [...new Set(events.map(e=>e.event_date))].sort();
+  DATES = mergeDays([...new Set(events.map(e=>e.event_date))]);
   if(!CURRENT || !DATES.includes(CURRENT)) CURRENT = DATES[0] || null;
   renderTabs();
   loadPrayers();
@@ -215,6 +215,28 @@ async function saveTabs(tabs){
   if(error){ alert('탭 저장 실패: '+error.message); return false; }
   CAMP.tabs = tabs;
   return true;
+}
+
+function mergeDays(found){
+  let d = CAMP && CAMP.days;
+  if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(e){ d = null; } }
+  if(!Array.isArray(d)) d = [];
+  const out = d.filter(x=>typeof x === 'string');
+  found.slice().sort().forEach(x=>{ if(!out.includes(x)) out.push(x); });
+  return out;
+}
+async function saveDays(days){
+  const { error } = await sb.from('camps').update({ days }).eq('id', CAMP.id);
+  if(error){ alert('날짜 순서 저장 실패: '+error.message); return false; }
+  CAMP.days = days;
+  return true;
+}
+async function moveDate(dir){
+  const i = DATES.indexOf(CURRENT), j = i + dir;
+  if(i < 0 || j < 0 || j >= DATES.length) return;
+  DATES[i] = DATES[j]; DATES[j] = CURRENT;
+  renderTabs(); renderDay();
+  await saveDays(DATES);
 }
 
 function renderTabs(){
@@ -257,7 +279,7 @@ function addNewDate(){
   if(!d) return;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ alert('YYYY-MM-DD 형식으로 입력하세요.'); return; }
   CURRENT = d;
-  if(!DATES.includes(d)){ DATES.push(d); DATES.sort(); }
+  if(!DATES.includes(d)){ DATES.push(d); saveDays(DATES); }
   renderTabs();
   renderDay();
 }
@@ -274,11 +296,12 @@ async function renameDate(){
     if(error){ alert('날짜 변경 실패: '+error.message); return; }
     items.forEach(e=>{ e.event_date = nd; });
   }
-  DATES = DATES.filter(d=>d!==CURRENT);
-  if(!DATES.includes(nd)) DATES.push(nd);
-  DATES.sort();
+  const pos = DATES.indexOf(CURRENT);
+  if(DATES.includes(nd)) DATES = DATES.filter(d=>d!==CURRENT);
+  else DATES[pos] = nd;
   CURRENT = nd;
   renderTabs(); renderDay();
+  await saveDays(DATES);
 }
 
 async function deleteDate(){
@@ -298,13 +321,15 @@ async function deleteDate(){
   DATES = DATES.filter(d=>d!==CURRENT);
   CURRENT = DATES[Math.max(0, idx-1)] || DATES[0] || null;
   renderTabs(); renderDay();
+  await saveDays(DATES);
 }
 
 function renderDay(){
   const list = document.getElementById('list');
   if(!CURRENT){ list.innerHTML='<div class="loading">일정이 없습니다. ＋날짜로 시작하세요.</div>'; return; }
   const items = ALL.filter(e=>e.event_date===CURRENT);
-  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>📅 ${fmtTab(CURRENT)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="renameDate()">✏ 날짜 변경</button><button class="btn btn-ghost" onclick="deleteDate()" ${DATES.length<=1?'disabled style="opacity:.3;"':''}>🗑 날짜 삭제</button></div></div>`;
+  const di = DATES.indexOf(CURRENT);
+  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>📅 ${fmtTab(CURRENT)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveDate(-1)" ${di<=0?'disabled style="opacity:.3;"':''}>⬆</button><button class="btn btn-ghost" onclick="moveDate(1)" ${di>=DATES.length-1?'disabled style="opacity:.3;"':''}>⬇</button><button class="btn btn-ghost" onclick="renameDate()">✏ 날짜 변경</button><button class="btn btn-ghost" onclick="deleteDate()" ${DATES.length<=1?'disabled style="opacity:.3;"':''}>🗑 날짜 삭제</button></div></div>`;
   if(items.length===0){ list.innerHTML = head + '<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
   list.innerHTML = head + items.map(cardHtml).join('');
 }
