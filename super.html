@@ -136,6 +136,10 @@ function cardHtml(c){
       <div class="row">
         <a class="btn btn-primary" href="admin.html?c=${c.slug}">⚙ 관리</a>
         <a class="btn btn-view" href="camp.html?c=${c.slug}" target="_blank">👁 뷰어</a>
+        <button class="btn btn-ghost" onclick="copyLink('${c.slug}')">🔗 링크 복사</button>
+      </div>
+      <div class="row">
+        <input type="text" readonly value="${location.origin}${location.pathname.replace(/[^/]*$/,'')}camp.html?c=${c.slug}" style="flex:1; min-width:220px; background:#f7f8fa; color:#5c6270;" onclick="this.select()">
       </div>
       <div class="row">
         <label>담당 계정</label>
@@ -150,6 +154,12 @@ async function changeOwner(campId, newOwner){
   if(error){ alert('변경 실패: ' + error.message); return; }
   alert('담당 계정이 변경되었습니다.');
   loadDashboard();
+}
+
+function copyLink(slug){
+  const base = location.origin + location.pathname.replace(/[^/]*$/,'');
+  const url = base + 'camp.html?c=' + slug;
+  navigator.clipboard.writeText(url).then(() => alert('링크가 복사되었습니다!\n\n' + url));
 }
 </script>
 </body>
