@@ -262,12 +262,51 @@ function addNewDate(){
   renderDay();
 }
 
+async function renameDate(){
+  if(!CURRENT) return;
+  const nd = prompt('날짜 변경 (YYYY-MM-DD)', CURRENT);
+  if(!nd || nd===CURRENT) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(nd)){ alert('YYYY-MM-DD 형식으로 입력하세요.'); return; }
+  if(DATES.includes(nd) && !confirm(`${fmtTab(nd)}가 이미 있습니다. 두 날짜의 일정이 합쳐집니다. 계속할까요?`)) return;
+  const items = ALL.filter(e=>e.event_date===CURRENT);
+  if(items.length){
+    const { error } = await sb.from('events').update({ event_date: nd }).eq('camp_id', CAMP.id).eq('event_date', CURRENT);
+    if(error){ alert('날짜 변경 실패: '+error.message); return; }
+    items.forEach(e=>{ e.event_date = nd; });
+  }
+  DATES = DATES.filter(d=>d!==CURRENT);
+  if(!DATES.includes(nd)) DATES.push(nd);
+  DATES.sort();
+  CURRENT = nd;
+  renderTabs(); renderDay();
+}
+
+async function deleteDate(){
+  if(!CURRENT) return;
+  if(DATES.length<=1){ alert('마지막 날짜는 삭제할 수 없습니다.'); return; }
+  const items = ALL.filter(e=>e.event_date===CURRENT);
+  const msg = items.length
+    ? `${fmtTab(CURRENT)}의 일정 ${items.length}개가 함께 삭제됩니다. 계속할까요?`
+    : `${fmtTab(CURRENT)}를 삭제할까요?`;
+  if(!confirm(msg)) return;
+  if(items.length){
+    const { error } = await sb.from('events').delete().eq('camp_id', CAMP.id).eq('event_date', CURRENT);
+    if(error){ alert('삭제 실패: '+error.message); return; }
+    ALL = ALL.filter(e=>e.event_date!==CURRENT);
+  }
+  const idx = DATES.indexOf(CURRENT);
+  DATES = DATES.filter(d=>d!==CURRENT);
+  CURRENT = DATES[Math.max(0, idx-1)] || DATES[0] || null;
+  renderTabs(); renderDay();
+}
+
 function renderDay(){
   const list = document.getElementById('list');
   if(!CURRENT){ list.innerHTML='<div class="loading">일정이 없습니다. ＋날짜로 시작하세요.</div>'; return; }
   const items = ALL.filter(e=>e.event_date===CURRENT);
-  if(items.length===0){ list.innerHTML='<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
-  list.innerHTML = items.map(cardHtml).join('');
+  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>📅 ${fmtTab(CURRENT)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="renameDate()">✏ 날짜 변경</button><button class="btn btn-ghost" onclick="deleteDate()" ${DATES.length<=1?'disabled style="opacity:.3;"':''}>🗑 날짜 삭제</button></div></div>`;
+  if(items.length===0){ list.innerHTML = head + '<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
+  list.innerHTML = head + items.map(cardHtml).join('');
 }
 
 function cardHtml(e){
