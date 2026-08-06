@@ -329,7 +329,7 @@ function renderDay(){
   if(!CURRENT){ list.innerHTML='<div class="loading">일정이 없습니다. ＋날짜로 시작하세요.</div>'; return; }
   const items = ALL.filter(e=>e.event_date===CURRENT);
   const di = DATES.indexOf(CURRENT);
-<button class="btn btn-ghost" onclick="moveDate(-1)" ${di<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveDate(1)" ${di>=DATES.length-1?'disabled style="opacity:.3;"':''}>▶</button>
+  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>📅 ${fmtTab(CURRENT)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveDate(-1)" ${di<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveDate(1)" ${di>=DATES.length-1?'disabled style="opacity:.3;"':''}>▶</button><button class="btn btn-ghost" onclick="renameDate()">✏ 날짜 변경</button><button class="btn btn-ghost" onclick="deleteDate()" ${DATES.length<=1?'disabled style="opacity:.3;"':''}>🗑 날짜 삭제</button></div></div>`;
   if(items.length===0){ list.innerHTML = head + '<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
   list.innerHTML = head + items.map(cardHtml).join('');
 }
@@ -423,7 +423,7 @@ function renderPrayers(){
   const el = document.getElementById('prayerList');
   const tabs = getTabs();
   const tab = tabs.find(t=>t.id===CURRENT_TAB) || tabs[0] || {id:'t1',name:''};
-<div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveTab('${tab.id}',-1)" ${tabs.findIndex(t=>t.id===tab.id)<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveTab('${tab.id}',1)" ${tabs.findIndex(t=>t.id===tab.id)>=tabs.length-1?'disabled style="opacity:.3;"':''}>▶</button><button class="btn btn-ghost" onclick="renameTab('${tab.id}')">✏ 탭 이름</button>
+  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>🙏 ${esc(tab.name)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveTab('${tab.id}',-1)" ${tabs.findIndex(t=>t.id===tab.id)<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveTab('${tab.id}',1)" ${tabs.findIndex(t=>t.id===tab.id)>=tabs.length-1?'disabled style="opacity:.3;"':''}>▶</button><button class="btn btn-ghost" onclick="renameTab('${tab.id}')">✏ 탭 이름</button><button class="btn btn-ghost" onclick="deleteTab('${tab.id}')" ${tabs.length<=1?'disabled style="opacity:.3;"':''}>🗑 탭 삭제</button></div></div>`;
   if(!PRAYERS.length){ el.innerHTML = head + '<div class="loading">아직 내용이 없습니다. ＋추가를 눌러보세요.</div>'; return; }
   el.innerHTML = head + PRAYERS.map((p,i)=>`
     <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.8;'}">
