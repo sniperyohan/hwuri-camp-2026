@@ -240,8 +240,9 @@
     ddayEl.textContent = dayNum + '일차 · 진행 중';
     ddayEl.style.display = 'inline-block';
 
-    const todayList = (byDate[dates.find(d=>d===now.toISOString().slice(0,10))] || byDate[dates[0]] || []);
-    const times = (byDate[now.toISOString().slice(0,10)] || []).map(e=>e.time).filter(Boolean);
+    const _lds = (dt)=>{ const d=dt||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+    const todayList = (byDate[dates.find(d=>d===_lds(now))] || byDate[dates[0]] || []);
+    const times = (byDate[_lds(now)] || []).map(e=>e.time).filter(Boolean);
     if(times.length >= 1){
       const toMin = t => { const [h,m] = t.split(/[:\-~]/).map(Number); return h*60 + (m||0); };
       const first = toMin(times[0]);
@@ -260,7 +261,8 @@
   updateProgress();
   const WEEK = ['일','월','화','수','목','금','토'];
   const tabsEl = document.getElementById('tabs');
-  const todayStr = new Date().toISOString().slice(0,10);
+  const localDateStr = (dt)=>{ const d=dt||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const todayStr = localDateStr();
 
   function fmtTab(d){
     const dt = new Date(d+'T00:00:00');
@@ -276,11 +278,16 @@
     list.forEach((e,i)=>{
       let isNow=false;
       if(date===todayStr && e.time){
-        const [h,m]=e.time.split(':').map(Number);
-        const start=h*60+(m||0);
-        let end=24*60;
-        const next=list[i+1];
-        if(next && next.time){const[nh,nm]=next.time.split(':').map(Number); end=nh*60+(nm||0);}
+        // "11:00-17:00" 또는 "11:00" 형식 모두 처리
+        const parts = e.time.split('-');
+        const toMin = (t)=>{ const [h,m]=t.trim().split(':').map(Number); return h*60+(m||0); };
+        const start = toMin(parts[0]);
+        let end;
+        if(parts[1]){ end = toMin(parts[1]); }          // 범위면 끝 시각 사용
+        else {                                            // 단일 시각이면 다음 항목 시작을 끝으로
+          const next=list[i+1];
+          end = (next && next.time) ? toMin(next.time.split('-')[0]) : 24*60;
+        }
         if(nowMin>=start && nowMin<end) isNow=true;
       }
       const nowTag = isNow ? '<span class="now-tag">NOW</span>' : '';
