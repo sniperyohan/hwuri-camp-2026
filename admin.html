@@ -49,6 +49,13 @@
   .emoji-pick:hover{background:#e8eaee;}
   .card-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px;}
   .loading{text-align:center; color:#8a909c; padding:40px;}
+  .toggle{display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;}
+  .toggle input{display:none;}
+  .toggle .track{width:46px; height:26px; border-radius:20px; background:#ccc; position:relative; transition:.25s;}
+  .toggle .track::after{content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:.25s;}
+  .toggle input:checked + .track{background:#5e8a68;}
+  .toggle input:checked + .track::after{transform:translateX(20px);}
+  .toggle .lbl{font-size:13px; font-weight:700; color:#666;}
 </style>
 </head>
 <body>
@@ -83,21 +90,16 @@
 
     <div class="tabs" id="tabs"></div>
 
-    <div class="bar">
+    <div class="bar" id="dayBar">
       <button class="btn btn-add" onclick="addItem()">＋ 이 날짜에 항목 추가</button>
       <button class="btn btn-ghost" onclick="loadList()">↻ 새로고침</button>
     </div>
-
-    <div id="list"><div class="loading">불러오는 중...</div></div>
-
-    <hr style="margin:24px 0; border:none; border-top:1px solid #ddd;">
-
-    <h3 style="margin:0 0 10px;">🙏 기도제목 <span style="font-size:13px; color:#888;">(미리 써두고 하나씩 공개)</span></h3>
-    <div class="bar">
+    <div class="bar" id="prayerBar" style="display:none;">
       <button class="btn btn-add" onclick="addPrayer()">＋ 기도제목 추가</button>
     </div>
-    <div class="tabs" id="prayerTabs" style="margin-bottom:10px;"></div>
-    <div id="prayerList"><div class="loading">불러오는 중...</div></div>
+
+    <div id="list"><div class="loading">불러오는 중...</div></div>
+    <div id="prayerList" style="display:none;"></div>
   </div>
 </div>
 
@@ -178,17 +180,36 @@ async function loadList(){
 const WEEK = ['일','월','화','수','목','금','토'];
 function fmtTab(d){ const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}(${WEEK[dt.getDay()]})`; }
 
+let VIEW = 'day';  // 'day' 또는 'prayer'
+
 function renderTabs(){
   const t = document.getElementById('tabs');
   let html='';
   DATES.forEach(d=>{
-    html += `<button class="tab${d===CURRENT?' active':''}" onclick="selectDay('${d}')">${fmtTab(d)}</button>`;
+    html += `<button class="tab${(VIEW==='day'&&d===CURRENT)?' active':''}" onclick="selectDay('${d}')">${fmtTab(d)}</button>`;
   });
   html += `<button class="tab addtab" onclick="addNewDate()">＋ 날짜</button>`;
+  html += `<button class="tab${VIEW==='prayer'?' active':''}" onclick="selectPrayer()">🙏 기도</button>`;
   t.innerHTML = html;
 }
 
-function selectDay(d){ CURRENT=d; renderTabs(); renderDay(); }
+function selectDay(d){
+  VIEW='day'; CURRENT=d;
+  document.getElementById('dayBar').style.display='';
+  document.getElementById('prayerBar').style.display='none';
+  document.getElementById('list').style.display='';
+  document.getElementById('prayerList').style.display='none';
+  renderTabs(); renderDay();
+}
+
+function selectPrayer(){
+  VIEW='prayer';
+  document.getElementById('dayBar').style.display='none';
+  document.getElementById('prayerBar').style.display='';
+  document.getElementById('list').style.display='none';
+  document.getElementById('prayerList').style.display='';
+  renderTabs(); renderPrayers();
+}
 
 function addNewDate(){
   const d = prompt('새 날짜를 입력하세요 (YYYY-MM-DD)', CURRENT || '');
@@ -288,41 +309,25 @@ async function loadPrayers(){
   renderPrayers();
 }
 
-let PRAYER_TAB = 'public';  // 'public' 또는 'private'
-
 function renderPrayers(){
-  const pub = PRAYERS.filter(p=>p.is_public);
-  const priv = PRAYERS.filter(p=>!p.is_public);
-
-  // 탭 렌더링
-  const tabs = document.getElementById('prayerTabs');
-  tabs.innerHTML =
-    `<button class="tab${PRAYER_TAB==='public'?' active':''}" onclick="switchPrayerTab('public')">🌍 공개중 (${pub.length})</button>
-     <button class="tab${PRAYER_TAB==='private'?' active':''}" onclick="switchPrayerTab('private')">🔒 비공개 (${priv.length})</button>`;
-
-  const shown = PRAYER_TAB==='public' ? pub : priv;
   const el = document.getElementById('prayerList');
-  if(!shown.length){
-    el.innerHTML = `<div class="loading">${PRAYER_TAB==='public'?'아직 공개된 기도제목이 없습니다.':'비공개 기도제목이 없습니다.'}</div>`;
-    return;
-  }
-  el.innerHTML = shown.map(p=>`
-    <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.75;'}">
-      <input id="pt-${p.id}" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
-      <textarea id="pc-${p.id}" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
-      <div class="bar" style="margin-top:8px; align-items:center;">
-        <button class="btn ${p.is_public?'btn-primary':'btn-ghost'}" onclick="togglePrayer(${p.id}, ${!p.is_public})">
-          ${p.is_public?'🌍 공개중 → 비공개로':'🔒 비공개 → 공개로'}
-        </button>
-        <button class="btn btn-primary" onclick="savePrayer(${p.id})">💾 저장</button>
+  if(!PRAYERS.length){ el.innerHTML='<div class="loading">아직 기도제목이 없습니다. ＋기도제목 추가를 눌러보세요.</div>'; return; }
+  el.innerHTML = PRAYERS.map(p=>`
+    <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.8;'}">
+      <div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label class="toggle">
+          <input type="checkbox" ${p.is_public?'checked':''} onchange="togglePrayer(${p.id}, this.checked)">
+          <span class="track"></span>
+          <span class="lbl">${p.is_public?'🌍 공개중':'🔒 비공개'}</span>
+        </label>
         <button class="btn btn-ghost" onclick="delPrayer(${p.id})">🗑 삭제</button>
       </div>
+      <input id="pt-${p.id}" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
+      <textarea id="pc-${p.id}" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
+      <div class="bar" style="margin-top:8px;">
+        <button class="btn btn-primary" onclick="savePrayer(${p.id})">💾 저장</button>
+      </div>
     </div>`).join('');
-}
-
-function switchPrayerTab(tab){
-  PRAYER_TAB = tab;
-  renderPrayers();
 }
 
 async function addPrayer(){
