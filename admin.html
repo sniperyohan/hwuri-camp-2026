@@ -33,7 +33,7 @@
   textarea{width:100%; min-height:70px; resize:vertical; line-height:1.5;}
 
   /* 날짜 탭 */
-  .tabs{display:flex; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px;}
+  .tabs{display:flex; align-items:center; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px;}
   .tab{white-space:nowrap; background:#fff; border:1px solid #dde1e8; border-radius:20px; padding:8px 15px; font-size:13px; font-weight:700; cursor:pointer; color:#8a909c;}
   .tab.active{background:#4a5b7c; color:#fff; border-color:#4a5b7c;}
   .tab.addtab{background:#eef4ee; color:#5e8a68; border-color:#cfe0cf;}
@@ -56,7 +56,7 @@
   .toggle input:checked + .track{background:#5e8a68;}
   .toggle input:checked + .track::after{transform:translateX(20px);}
   .toggle .lbl{font-size:13px; font-weight:700; color:#666;}
-  .tab-divider{display:inline-block; margin:0 6px; color:#b0b0b0; font-size:16px; vertical-align:middle; line-height:28px;}
+  .tab-divider{display:inline-flex; align-items:center; margin:0 6px; color:#b0b0b0; font-size:16px;}
   .tab-divider::before{content:"•";}
   .tab-prayer{background:#eef3ee !important; border:1px dashed #9bb89b !important;}
   .tab-prayer.active{background:#5e8a68 !important; color:#fff !important; border-style:solid !important;}
