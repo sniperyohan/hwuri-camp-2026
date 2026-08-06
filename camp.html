@@ -228,7 +228,13 @@
 
   const byDate = {};
   events.forEach(e=>{ (byDate[e.event_date] ||= []).push(e); });
-  const dates = Object.keys(byDate).sort();
+  let DAYS = camp && camp.days;
+  if(typeof DAYS === 'string'){ try{ DAYS = JSON.parse(DAYS); }catch(e){ DAYS = null; } }
+  if(!Array.isArray(DAYS)) DAYS = [];
+  const found = Object.keys(byDate);
+  const datesSorted = found.slice().sort();
+  const dates = DAYS.filter(d=>found.includes(d));
+  datesSorted.forEach(d=>{ if(!dates.includes(d)) dates.push(d); });
 
   function updateProgress(){
     const ddayEl = document.getElementById('dday');
@@ -239,8 +245,8 @@
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const start = new Date(dates[0] + 'T00:00:00');
-    const end   = new Date(dates[dates.length-1] + 'T00:00:00');
+    const start = new Date(datesSorted[0] + 'T00:00:00');
+    const end   = new Date(datesSorted[datesSorted.length-1] + 'T00:00:00');
 
     // 시작 전: D-day 카운트
     if(today < start){
@@ -292,29 +298,42 @@
   }
 
   let PRAYERS = [];
+  let TABS = [];
+  function getTabs(){
+    let t = camp && camp.tabs;
+    if(typeof t === 'string'){ try{ t = JSON.parse(t); }catch(e){ t = null; } }
+    if(!Array.isArray(t) || !t.length) t = [{ id:'t1', name:(camp && camp.prayer_label) || '기도' }];
+    return t;
+  }
   async function loadPrayers(campId){
     const { data, error } = await sb.from('prayers')
-      .select('id, title, content, is_public, sort_order')
+      .select('id, title, content, is_public, sort_order, tab_id')
       .eq('camp_id', campId).order('sort_order', {ascending:true});
     PRAYERS = (error || !data) ? [] : data;
-    // 기도제목이 하나라도 있으면 탭 추가
-    if(PRAYERS.length){
-      const divider=document.createElement('span');
-      divider.className='tab-divider';
-      tabsEl.appendChild(divider);
+    if(!PRAYERS.length) return;
+    TABS = getTabs();
+    const first = (TABS[0]||{}).id || 't1';
+    const shown = TABS.filter(tab => PRAYERS.some(p => (p.tab_id||first) === tab.id));
+    if(!shown.length) return;
+    const divider=document.createElement('span');
+    divider.className='tab-divider';
+    tabsEl.appendChild(divider);
+    shown.forEach(tab=>{
       const b=document.createElement('button');
-      b.className='tab tab-prayer'; b.dataset.date='__prayer__';
-      b.textContent='🙏 ' + (camp.prayer_label || '기도');
-      b.onclick=()=>renderPrayers();
+      b.className='tab tab-prayer'; b.dataset.date='__prayer__'+tab.id;
+      b.textContent='🙏 ' + tab.name;
+      b.onclick=()=>renderPrayers(tab.id);
       tabsEl.appendChild(b);
-    }
+    });
   }
 
-  function renderPrayers(){
-    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.date==='__prayer__'));
+  function renderPrayers(tabId){
+    const first = (TABS[0]||{}).id || 't1';
+    const tid = tabId || first;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.date==='__prayer__'+tid));
     let html = '';
     let lockedCount = 0;
-    PRAYERS.forEach(p=>{
+    PRAYERS.filter(p => (p.tab_id||first) === tid).forEach(p=>{
       if(p.is_public){
         const title = (p.title||'').replace(/</g,'&lt;');
         const content = (p.content||'').replace(/</g,'&lt;');
