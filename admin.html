@@ -89,6 +89,14 @@
     </div>
 
     <div id="list"><div class="loading">불러오는 중...</div></div>
+
+    <hr style="margin:24px 0; border:none; border-top:1px solid #ddd;">
+
+    <h3 style="margin:0 0 10px;">🙏 기도제목 <span style="font-size:13px; color:#888;">(미리 써두고 하나씩 공개)</span></h3>
+    <div class="bar">
+      <button class="btn btn-add" onclick="addPrayer()">＋ 기도제목 추가</button>
+    </div>
+    <div id="prayerList"><div class="loading">불러오는 중...</div></div>
   </div>
 </div>
 
@@ -162,6 +170,7 @@ async function loadList(){
   DATES = [...new Set(events.map(e=>e.event_date))].sort();
   if(!CURRENT || !DATES.includes(CURRENT)) CURRENT = DATES[0] || null;
   renderTabs();
+  loadPrayers();
   renderDay();
 }
 
@@ -265,6 +274,62 @@ async function addItem(){
   const { error } = await sb.from('events').insert(ins);
   if(error){ alert('추가 실패: '+error.message); return; }
   loadList();
+}
+
+// ===== 기도제목 =====
+let PRAYERS = [];
+
+async function loadPrayers(){
+  const { data, error } = await sb.from('prayers')
+    .select('*').eq('camp_id', CAMP.id).order('sort_order');
+  if(error){ document.getElementById('prayerList').innerHTML='<div class="loading">불러오기 실패: '+error.message+'</div>'; return; }
+  PRAYERS = data || [];
+  renderPrayers();
+}
+
+function renderPrayers(){
+  const el = document.getElementById('prayerList');
+  if(!PRAYERS.length){ el.innerHTML='<div class="loading">아직 기도제목이 없습니다.</div>'; return; }
+  el.innerHTML = PRAYERS.map(p=>`
+    <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.6;'}">
+      <input id="pt-${p.id}" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
+      <textarea id="pc-${p.id}" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
+      <div class="bar" style="margin-top:8px; align-items:center;">
+        <button class="btn ${p.is_public?'btn-primary':'btn-ghost'}" onclick="togglePrayer(${p.id}, ${!p.is_public})">
+          ${p.is_public?'🌍 공개중':'🔒 비공개'}
+        </button>
+        <button class="btn btn-primary" onclick="savePrayer(${p.id})">💾 저장</button>
+        <button class="btn btn-ghost" onclick="delPrayer(${p.id})">🗑 삭제</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addPrayer(){
+  const ins = { camp_id: CAMP.id, title:'새 기도제목', content:'', is_public:false, sort_order: 999 };
+  const { error } = await sb.from('prayers').insert(ins);
+  if(error){ alert('추가 실패: '+error.message); return; }
+  loadPrayers();
+}
+
+async function savePrayer(id){
+  const title = document.getElementById('pt-'+id).value;
+  const content = document.getElementById('pc-'+id).value;
+  const { error } = await sb.from('prayers').update({ title, content }).eq('id', id);
+  if(error){ alert('저장 실패: '+error.message); return; }
+  loadPrayers();
+}
+
+async function togglePrayer(id, makePublic){
+  const { error } = await sb.from('prayers').update({ is_public: makePublic }).eq('id', id);
+  if(error){ alert('변경 실패: '+error.message); return; }
+  loadPrayers();
+}
+
+async function delPrayer(id){
+  if(!confirm('이 기도제목을 삭제할까요?')) return;
+  const { error } = await sb.from('prayers').delete().eq('id', id);
+  if(error){ alert('삭제 실패: '+error.message); return; }
+  loadPrayers();
 }
 </script>
 </body>

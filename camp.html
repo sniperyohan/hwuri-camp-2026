@@ -129,6 +129,24 @@
   body[data-theme="dark"] .row{color:#b3bcc8;}
   body[data-theme="dark"] .row b{color:#eef3f9;}
   body[data-theme="dark"] .footer{color:#6b7684;}
+  .prayer-head{text-align:center; font-size:18px; font-weight:800; margin:0 0 14px;}
+  .prayer-card{
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:14px; padding:14px 16px; margin-bottom:10px;
+    background:rgba(0,0,0,.02);
+    opacity:0; transform:translateY(8px); transition:.4s;
+  }
+  .prayer-card.show{opacity:1; transform:none;}
+  .prayer-card .p-title{font-weight:700; margin-bottom:6px;}
+  .prayer-card .p-content{font-size:14px; line-height:1.6; white-space:pre-wrap;}
+  .prayer-locked{
+    border:1px dashed rgba(0,0,0,.15);
+    border-radius:14px; padding:16px; margin-bottom:10px;
+    text-align:center; color:#999; font-size:14px;
+    background:rgba(0,0,0,.015);
+  }
+  body[data-theme="dark"] .prayer-card{border-color:rgba(255,255,255,.1); background:rgba(255,255,255,.04);}
+  body[data-theme="dark"] .prayer-locked{border-color:rgba(255,255,255,.15); background:rgba(255,255,255,.03); color:#8b95a3;}
 </style>
 </head>
 <body data-theme="soft">
@@ -152,6 +170,12 @@
 
   <div class="tabs" id="tabs"></div>
   <div id="content"><div class="loading">불러오는 중...</div></div>
+
+  <div id="prayerSection" style="display:none; margin-top:28px;">
+    <h2 class="prayer-head">🙏 기도제목</h2>
+    <div id="prayerBox"></div>
+  </div>
+
   <div class="footer" id="footer"></div>
 </div>
 
@@ -193,6 +217,8 @@
   document.getElementById('camp-title').textContent = camp.title || '일정';
   document.getElementById('camp-sub').textContent = camp.subtitle || '';
   document.title = camp.title || '수련회 일정';
+
+  loadPrayers(camp.id);
 
   const { data: events, error: evErr } = await sb
     .from('events').select('*')
@@ -267,6 +293,43 @@
   function fmtTab(d){
     const dt = new Date(d+'T00:00:00');
     return `${dt.getMonth()+1}/${dt.getDate()}(${WEEK[dt.getDay()]})`;
+  }
+
+  async function loadPrayers(campId){
+    const { data, error } = await sb.from('prayers')
+      .select('id, title, content, is_public, sort_order')
+      .eq('camp_id', campId).order('sort_order', {ascending:true});
+    if(error || !data || !data.length) return;  // 없으면 섹션 숨김 유지
+
+    const section = document.getElementById('prayerSection');
+    const box = document.getElementById('prayerBox');
+    let html = '';
+    let lockedCount = 0;
+
+    data.forEach(p=>{
+      if(p.is_public){
+        const title = (p.title||'').replace(/</g,'&lt;');
+        const content = (p.content||'').replace(/</g,'&lt;');
+        html += `<div class="prayer-card">
+          <div class="p-title">🙏 ${title}</div>
+          ${content ? `<div class="p-content">${content}</div>` : ''}
+        </div>`;
+      } else {
+        lockedCount++;
+      }
+    });
+
+    for(let i=0; i<lockedCount; i++){
+      html += `<div class="prayer-locked">🔒 곧 공개됩니다</div>`;
+    }
+
+    if(!html) return;  // 공개된 것도 잠긴 것도 없으면 숨김
+    box.innerHTML = html;
+    section.style.display = '';
+    // 등장 애니메이션
+    box.querySelectorAll('.prayer-card').forEach((el,i)=>{
+      setTimeout(()=>el.classList.add('show'), i*80);
+    });
   }
 
   function render(date){
