@@ -127,7 +127,7 @@ function labelOf(uuid){
 function cardHtml(c){
   const opts = ['<option value="">(주인 없음)</option>']
     .concat(ACCOUNTS.map(a =>
-      `<option value="${a.user_id}" ${a.user_id===c.owner?'selected':''}>${a.label}</option>`
+      `<option value="${a.user_id}" ${a.user_id===c.owner?'selected':''}>${a.label}${a.email ? ' (' + a.email + ')' : ''}</option>`
     )).join('');
   return `
     <div class="card">
