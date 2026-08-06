@@ -329,12 +329,12 @@ function renderDay(){
   if(!CURRENT){ list.innerHTML='<div class="loading">일정이 없습니다. ＋날짜로 시작하세요.</div>'; return; }
   const items = ALL.filter(e=>e.event_date===CURRENT);
   const di = DATES.indexOf(CURRENT);
-  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>📅 ${fmtTab(CURRENT)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveDate(-1)" ${di<=0?'disabled style="opacity:.3;"':''}>⬆</button><button class="btn btn-ghost" onclick="moveDate(1)" ${di>=DATES.length-1?'disabled style="opacity:.3;"':''}>⬇</button><button class="btn btn-ghost" onclick="renameDate()">✏ 날짜 변경</button><button class="btn btn-ghost" onclick="deleteDate()" ${DATES.length<=1?'disabled style="opacity:.3;"':''}>🗑 날짜 삭제</button></div></div>`;
+<button class="btn btn-ghost" onclick="moveDate(-1)" ${di<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveDate(1)" ${di>=DATES.length-1?'disabled style="opacity:.3;"':''}>▶</button>
   if(items.length===0){ list.innerHTML = head + '<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
   list.innerHTML = head + items.map(cardHtml).join('');
 }
 
-function cardHtml(e){
+function cardHtml(e, i, arr){
   const picks = EMOJIS.map(em=>`<span class="emoji-pick" onclick="addEmoji(${e.id},'${em}')">${em}</span>`).join('');
   return `<div class="card" data-id="${e.id}">
     <div class="fields">
@@ -347,6 +347,8 @@ function cardHtml(e){
       <label>순서</label><input type="number" class="f-sort" value="${e.sort_order??0}" style="width:90px;">
     </div>
     <div class="card-actions">
+      <button class="btn btn-ghost" onclick="moveItem(${e.id},-1)" ${i===0?'disabled style="opacity:.3;"':''}>⬆</button>
+      <button class="btn btn-ghost" onclick="moveItem(${e.id},1)" ${(arr&&i===arr.length-1)?'disabled style="opacity:.3;"':''}>⬇</button>
       <button class="btn btn-primary" onclick="saveItem(this,${e.id})">💾 저장</button>
       <button class="btn btn-del" onclick="delItem(${e.id})">🗑 삭제</button>
     </div>
@@ -397,7 +399,9 @@ async function delItem(id){
 
 async function addItem(){
   if(!CURRENT){ alert('먼저 ＋날짜로 날짜를 정하세요.'); return; }
-  const ins = { camp_id: CAMP.id, event_date: CURRENT, time:'', title:'새 일정', badge:'', detail:'', sort_order: 999 };
+  const cur = ALL.filter(e=>e.event_date===CURRENT);
+  const maxOrder = cur.length ? Math.max(...cur.map(e=>e.sort_order||0)) : 0;
+  const ins = { camp_id: CAMP.id, event_date: CURRENT, time:'', title:'새 일정', badge:'', detail:'', sort_order: maxOrder + 10 };
   const { error } = await sb.from('events').insert(ins);
   if(error){ alert('추가 실패: '+error.message); return; }
   loadList();
@@ -419,7 +423,7 @@ function renderPrayers(){
   const el = document.getElementById('prayerList');
   const tabs = getTabs();
   const tab = tabs.find(t=>t.id===CURRENT_TAB) || tabs[0] || {id:'t1',name:''};
-  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>🙏 ${esc(tab.name)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="renameTab('${tab.id}')">✏ 탭 이름</button><button class="btn btn-ghost" onclick="deleteTab('${tab.id}')" ${tabs.length<=1?'disabled style="opacity:.3;"':''}>🗑 탭 삭제</button></div></div>`;
+<div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveTab('${tab.id}',-1)" ${tabs.findIndex(t=>t.id===tab.id)<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveTab('${tab.id}',1)" ${tabs.findIndex(t=>t.id===tab.id)>=tabs.length-1?'disabled style="opacity:.3;"':''}>▶</button><button class="btn btn-ghost" onclick="renameTab('${tab.id}')">✏ 탭 이름</button>
   if(!PRAYERS.length){ el.innerHTML = head + '<div class="loading">아직 내용이 없습니다. ＋추가를 눌러보세요.</div>'; return; }
   el.innerHTML = head + PRAYERS.map((p,i)=>`
     <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.8;'}">
@@ -461,6 +465,29 @@ async function movePrayer(id, dir){
   const { error:e2 } = await sb.from('prayers').update({ sort_order: a.sort_order }).eq('id', b.id);
   if(e1||e2){ alert('순서 변경 실패'); return; }
   loadPrayers();
+}
+
+async function moveItem(id, dir){
+  const items = ALL.filter(e=>e.event_date===CURRENT);
+  const i = items.findIndex(e=>e.id===id), j = i + dir;
+  if(i<0 || j<0 || j>=items.length) return;
+  const a = items[i], b = items[j];
+  const ao = a.sort_order||0, bo = b.sort_order||0;
+  if(ao === bo){ alert('두 항목의 순서 값이 같습니다. 순서 칸에 다른 숫자를 넣고 저장해 주세요.'); return; }
+  const { error:e1 } = await sb.from('events').update({ sort_order: bo }).eq('id', a.id);
+  const { error:e2 } = await sb.from('events').update({ sort_order: ao }).eq('id', b.id);
+  if(e1||e2){ alert('순서 변경 실패'); return; }
+  a.sort_order = bo; b.sort_order = ao;
+  ALL.sort((x,y)=> x.event_date < y.event_date ? -1 : x.event_date > y.event_date ? 1 : (x.sort_order||0)-(y.sort_order||0));
+  renderDay();
+}
+
+async function moveTab(id, dir){
+  const tabs = getTabs();
+  const i = tabs.findIndex(t=>t.id===id), j = i + dir;
+  if(i<0 || j<0 || j>=tabs.length) return;
+  const tmp = tabs[i]; tabs[i] = tabs[j]; tabs[j] = tmp;
+  if(await saveTabs(tabs)){ renderTabs(); renderPrayers(); }
 }
 
 async function savePrayer(id){
