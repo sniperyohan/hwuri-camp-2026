@@ -152,13 +152,9 @@ async function init(){
   const SUPER_ADMIN = 'bcc871ee-6e51-4f24-92d9-b4a72572135c';
   const { data:{ user } } = await sb.auth.getUser();
   if(!user || (camp.owner !== user.id && user.id !== SUPER_ADMIN)){
-    document.getElementById('app').innerHTML =
-      '<div style="max-width:480px;margin:80px auto;text-align:center;padding:30px;">' +
-      '<div style="font-size:44px;">🔒</div>' +
-      '<h2 style="margin:14px 0 8px;">접근 권한이 없습니다</h2>' +
-      '<p style="color:#888;line-height:1.6;">이 수련회의 관리 권한이 없는 계정입니다.<br>담당 수련회 링크로 다시 접속해 주세요.</p>' +
-      '<button onclick="logout()" style="margin-top:18px;padding:10px 24px;border:none;border-radius:8px;background:#5e8a68;color:#fff;font-weight:700;cursor:pointer;">로그아웃</button>' +
-      '</div>';
+    alert('🔒 이 수련회의 관리 권한이 없는 계정입니다.\n\n담당 수련회 링크로 다시 로그인해 주세요.');
+    await sb.auth.signOut();
+    location.href = location.pathname + location.search;
     return;
   }
   // ===============================================
