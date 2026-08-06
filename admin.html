@@ -165,7 +165,7 @@ async function init(){
   document.getElementById('ct').value = camp.title || '';
   document.getElementById('cs').value = camp.subtitle || '';
   const plEl = document.getElementById('pl');
-  if(plEl){ plEl.value = camp.prayer_label || '기도'; (plEl.closest('.row')||plEl.parentElement).style.display='none'; }
+  if(plEl){ plEl.value = camp.prayer_label || '기도'; plEl.style.display='none'; const lb = plEl.previousElementSibling; if(lb) lb.style.display='none'; }
   document.getElementById('campEdit').style.display = '';
   loadList();
 }
