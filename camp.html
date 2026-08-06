@@ -171,11 +171,6 @@
   <div class="tabs" id="tabs"></div>
   <div id="content"><div class="loading">불러오는 중...</div></div>
 
-  <div id="prayerSection" style="display:none; margin-top:28px;">
-    <h2 class="prayer-head">🙏 기도제목</h2>
-    <div id="prayerBox"></div>
-  </div>
-
   <div class="footer" id="footer"></div>
 </div>
 
@@ -217,8 +212,6 @@
   document.getElementById('camp-title').textContent = camp.title || '일정';
   document.getElementById('camp-sub').textContent = camp.subtitle || '';
   document.title = camp.title || '수련회 일정';
-
-  loadPrayers(camp.id);
 
   const { data: events, error: evErr } = await sb
     .from('events').select('*')
@@ -295,18 +288,26 @@
     return `${dt.getMonth()+1}/${dt.getDate()}(${WEEK[dt.getDay()]})`;
   }
 
+  let PRAYERS = [];
   async function loadPrayers(campId){
     const { data, error } = await sb.from('prayers')
       .select('id, title, content, is_public, sort_order')
       .eq('camp_id', campId).order('sort_order', {ascending:true});
-    if(error || !data || !data.length) return;  // 없으면 섹션 숨김 유지
+    PRAYERS = (error || !data) ? [] : data;
+    // 기도제목이 하나라도 있으면 탭 추가
+    if(PRAYERS.length){
+      const b=document.createElement('button');
+      b.className='tab'; b.dataset.date='__prayer__'; b.textContent='🙏 기도';
+      b.onclick=()=>renderPrayers();
+      tabsEl.appendChild(b);
+    }
+  }
 
-    const section = document.getElementById('prayerSection');
-    const box = document.getElementById('prayerBox');
+  function renderPrayers(){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.date==='__prayer__'));
     let html = '';
     let lockedCount = 0;
-
-    data.forEach(p=>{
+    PRAYERS.forEach(p=>{
       if(p.is_public){
         const title = (p.title||'').replace(/</g,'&lt;');
         const content = (p.content||'').replace(/</g,'&lt;');
@@ -318,16 +319,11 @@
         lockedCount++;
       }
     });
-
     for(let i=0; i<lockedCount; i++){
       html += `<div class="prayer-locked">🔒 곧 공개됩니다</div>`;
     }
-
-    if(!html) return;  // 공개된 것도 잠긴 것도 없으면 숨김
-    box.innerHTML = html;
-    section.style.display = '';
-    // 등장 애니메이션
-    box.querySelectorAll('.prayer-card').forEach((el,i)=>{
+    content.innerHTML = html || '<div class="loading">아직 공개된 기도제목이 없습니다.</div>';
+    content.querySelectorAll('.prayer-card').forEach((el,i)=>{
       setTimeout(()=>el.classList.add('show'), i*80);
     });
   }
@@ -379,6 +375,8 @@
     b.onclick=()=>render(d);
     tabsEl.appendChild(b);
   });
+
+  await loadPrayers(camp.id);
 
   const startDate = dates.includes(todayStr) ? todayStr : dates[0];
   if(startDate) render(startDate);

@@ -96,6 +96,7 @@
     <div class="bar">
       <button class="btn btn-add" onclick="addPrayer()">＋ 기도제목 추가</button>
     </div>
+    <div class="tabs" id="prayerTabs" style="margin-bottom:10px;"></div>
     <div id="prayerList"><div class="loading">불러오는 중...</div></div>
   </div>
 </div>
@@ -287,21 +288,41 @@ async function loadPrayers(){
   renderPrayers();
 }
 
+let PRAYER_TAB = 'public';  // 'public' 또는 'private'
+
 function renderPrayers(){
+  const pub = PRAYERS.filter(p=>p.is_public);
+  const priv = PRAYERS.filter(p=>!p.is_public);
+
+  // 탭 렌더링
+  const tabs = document.getElementById('prayerTabs');
+  tabs.innerHTML =
+    `<button class="tab${PRAYER_TAB==='public'?' active':''}" onclick="switchPrayerTab('public')">🌍 공개중 (${pub.length})</button>
+     <button class="tab${PRAYER_TAB==='private'?' active':''}" onclick="switchPrayerTab('private')">🔒 비공개 (${priv.length})</button>`;
+
+  const shown = PRAYER_TAB==='public' ? pub : priv;
   const el = document.getElementById('prayerList');
-  if(!PRAYERS.length){ el.innerHTML='<div class="loading">아직 기도제목이 없습니다.</div>'; return; }
-  el.innerHTML = PRAYERS.map(p=>`
-    <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.6;'}">
+  if(!shown.length){
+    el.innerHTML = `<div class="loading">${PRAYER_TAB==='public'?'아직 공개된 기도제목이 없습니다.':'비공개 기도제목이 없습니다.'}</div>`;
+    return;
+  }
+  el.innerHTML = shown.map(p=>`
+    <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.75;'}">
       <input id="pt-${p.id}" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
       <textarea id="pc-${p.id}" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
       <div class="bar" style="margin-top:8px; align-items:center;">
         <button class="btn ${p.is_public?'btn-primary':'btn-ghost'}" onclick="togglePrayer(${p.id}, ${!p.is_public})">
-          ${p.is_public?'🌍 공개중':'🔒 비공개'}
+          ${p.is_public?'🌍 공개중 → 비공개로':'🔒 비공개 → 공개로'}
         </button>
         <button class="btn btn-primary" onclick="savePrayer(${p.id})">💾 저장</button>
         <button class="btn btn-ghost" onclick="delPrayer(${p.id})">🗑 삭제</button>
       </div>
     </div>`).join('');
+}
+
+function switchPrayerTab(tab){
+  PRAYER_TAB = tab;
+  renderPrayers();
 }
 
 async function addPrayer(){
