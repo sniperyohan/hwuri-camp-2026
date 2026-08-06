@@ -147,6 +147,8 @@
   }
   body[data-theme="dark"] .prayer-card{border-color:rgba(255,255,255,.1); background:rgba(255,255,255,.04);}
   body[data-theme="dark"] .prayer-locked{border-color:rgba(255,255,255,.15); background:rgba(255,255,255,.03); color:#8b95a3;}
+  .tab-divider{display:inline-block; width:1px; height:22px; background:rgba(0,0,0,.2); margin:0 3px; align-self:center;}
+  .tab-prayer{border:1px dashed rgba(94,138,104,.6) !important;}
 </style>
 </head>
 <body data-theme="soft">
@@ -296,8 +298,12 @@
     PRAYERS = (error || !data) ? [] : data;
     // 기도제목이 하나라도 있으면 탭 추가
     if(PRAYERS.length){
+      const divider=document.createElement('span');
+      divider.className='tab-divider';
+      tabsEl.appendChild(divider);
       const b=document.createElement('button');
-      b.className='tab'; b.dataset.date='__prayer__'; b.textContent='🙏 기도';
+      b.className='tab tab-prayer'; b.dataset.date='__prayer__';
+      b.textContent='🙏 ' + (camp.prayer_label || '기도');
       b.onclick=()=>renderPrayers();
       tabsEl.appendChild(b);
     }
