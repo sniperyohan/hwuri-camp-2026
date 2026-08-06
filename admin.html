@@ -164,7 +164,8 @@ async function init(){
   document.getElementById('campSub').textContent = camp.subtitle || '';
   document.getElementById('ct').value = camp.title || '';
   document.getElementById('cs').value = camp.subtitle || '';
-  document.getElementById('pl').value = camp.prayer_label || '기도';
+  const plEl = document.getElementById('pl');
+  if(plEl){ plEl.value = camp.prayer_label || '기도'; (plEl.closest('.row')||plEl.parentElement).style.display='none'; }
   document.getElementById('campEdit').style.display = '';
   loadList();
 }
@@ -201,6 +202,20 @@ const WEEK = ['일','월','화','수','목','금','토'];
 function fmtTab(d){ const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}(${WEEK[dt.getDay()]})`; }
 
 let VIEW = 'day';  // 'day' 또는 'prayer'
+let CURRENT_TAB = null;
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getTabs(){
+  let t = CAMP && CAMP.tabs;
+  if(typeof t === 'string'){ try{ t = JSON.parse(t); }catch(e){ t = null; } }
+  if(!Array.isArray(t) || !t.length) t = [{ id:'t1', name:(CAMP&&CAMP.prayer_label)||'기도' }];
+  return t;
+}
+async function saveTabs(tabs){
+  const { error } = await sb.from('camps').update({ tabs }).eq('id', CAMP.id);
+  if(error){ alert('탭 저장 실패: '+error.message); return false; }
+  CAMP.tabs = tabs;
+  return true;
+}
 
 function renderTabs(){
   const t = document.getElementById('tabs');
@@ -210,8 +225,11 @@ function renderTabs(){
   });
   html += `<button class="tab addtab" onclick="addNewDate()">＋ 날짜</button>`;
   html += `<span class="tab-divider"></span>`;
-  const plabel = (CAMP && CAMP.prayer_label) ? CAMP.prayer_label : '기도';
-  html += `<button class="tab tab-prayer${VIEW==='prayer'?' active':''}" onclick="selectPrayer()">🙏 ${plabel}</button>`;
+  getTabs().forEach(tab=>{
+    const on = (VIEW==='prayer' && tab.id===CURRENT_TAB);
+    html += `<button class="tab tab-prayer${on?' active':''}" onclick="selectPrayer('${tab.id}')">🙏 ${esc(tab.name)}</button>`;
+  });
+  html += `<button class="tab addtab" onclick="addTab()">＋ 탭</button>`;
   t.innerHTML = html;
 }
 
@@ -224,13 +242,14 @@ function selectDay(d){
   renderTabs(); renderDay();
 }
 
-function selectPrayer(){
+function selectPrayer(tabId){
+  CURRENT_TAB = tabId || (getTabs()[0]||{}).id;
   VIEW='prayer';
   document.getElementById('dayBar').style.display='none';
   document.getElementById('prayerBar').style.display='';
   document.getElementById('list').style.display='none';
   document.getElementById('prayerList').style.display='';
-  renderTabs(); renderPrayers();
+  renderTabs(); loadPrayers();
 }
 
 function addNewDate(){
@@ -324,8 +343,9 @@ async function addItem(){
 let PRAYERS = [];
 
 async function loadPrayers(){
+  if(!CURRENT_TAB) CURRENT_TAB = (getTabs()[0]||{}).id;
   const { data, error } = await sb.from('prayers')
-    .select('*').eq('camp_id', CAMP.id).order('sort_order');
+    .select('*').eq('camp_id', CAMP.id).eq('tab_id', CURRENT_TAB).order('sort_order');
   if(error){ document.getElementById('prayerList').innerHTML='<div class="loading">불러오기 실패: '+error.message+'</div>'; return; }
   PRAYERS = data || [];
   renderPrayers();
@@ -333,8 +353,11 @@ async function loadPrayers(){
 
 function renderPrayers(){
   const el = document.getElementById('prayerList');
-  if(!PRAYERS.length){ el.innerHTML='<div class="loading">아직 기도제목이 없습니다. ＋기도제목 추가를 눌러보세요.</div>'; return; }
-  el.innerHTML = PRAYERS.map((p,i)=>`
+  const tabs = getTabs();
+  const tab = tabs.find(t=>t.id===CURRENT_TAB) || tabs[0] || {id:'t1',name:''};
+  const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>🙏 ${esc(tab.name)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="renameTab('${tab.id}')">✏ 탭 이름</button><button class="btn btn-ghost" onclick="deleteTab('${tab.id}')" ${tabs.length<=1?'disabled style="opacity:.3;"':''}>🗑 탭 삭제</button></div></div>`;
+  if(!PRAYERS.length){ el.innerHTML = head + '<div class="loading">아직 내용이 없습니다. ＋추가를 눌러보세요.</div>'; return; }
+  el.innerHTML = head + PRAYERS.map((p,i)=>`
     <div class="card" style="margin-bottom:10px; ${p.is_public?'':'opacity:.8;'}">
       <div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:8px;">
         <label class="toggle">
@@ -358,7 +381,7 @@ function renderPrayers(){
 
 async function addPrayer(){
   const maxOrder = PRAYERS.length ? Math.max(...PRAYERS.map(p=>p.sort_order||0)) : 0;
-  const ins = { camp_id: CAMP.id, title:'새 기도제목', content:'', is_public:false, sort_order: maxOrder + 10 };
+  const ins = { camp_id: CAMP.id, tab_id: CURRENT_TAB, title:'새 기도제목', content:'', is_public:false, sort_order: maxOrder + 10 };
   const { error } = await sb.from('prayers').insert(ins);
   if(error){ alert('추가 실패: '+error.message); return; }
   loadPrayers();
@@ -395,6 +418,37 @@ async function delPrayer(id){
   const { error } = await sb.from('prayers').delete().eq('id', id);
   if(error){ alert('삭제 실패: '+error.message); return; }
   loadPrayers();
+}
+async function addTab(){
+  const name = prompt('새 탭 이름을 입력하세요', '새 탭');
+  if(!name || !name.trim()) return;
+  const tabs = getTabs().slice();
+  let n = 1; while(tabs.some(t=>t.id==='t'+n)) n++;
+  const id = 't'+n;
+  tabs.push({ id, name: name.trim() });
+  if(!await saveTabs(tabs)) return;
+  selectPrayer(id);
+}
+async function renameTab(id){
+  const tabs = getTabs().slice();
+  const tab = tabs.find(t=>t.id===id); if(!tab) return;
+  const name = prompt('탭 이름 변경', tab.name);
+  if(!name || !name.trim()) return;
+  tab.name = name.trim();
+  if(!await saveTabs(tabs)) return;
+  renderTabs(); renderPrayers();
+}
+async function deleteTab(id){
+  const tabs = getTabs().slice();
+  if(tabs.length <= 1){ alert('마지막 탭은 삭제할 수 없습니다.'); return; }
+  const tab = tabs.find(t=>t.id===id); if(!tab) return;
+  const { count } = await sb.from('prayers').select('id', { count:'exact', head:true }).eq('camp_id', CAMP.id).eq('tab_id', id);
+  if(!confirm(`'${tab.name}' 탭과 그 안의 글 ${count||0}개가 삭제됩니다. 계속할까요?`)) return;
+  const { error } = await sb.from('prayers').delete().eq('camp_id', CAMP.id).eq('tab_id', id);
+  if(error){ alert('삭제 실패: '+error.message); return; }
+  const rest = tabs.filter(t=>t.id!==id);
+  if(!await saveTabs(rest)) return;
+  selectPrayer(rest[0].id);
 }
 </script>
 </body>
