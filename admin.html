@@ -29,8 +29,8 @@
   .btn-ghost{background:#eef1f6; color:#4a5b7c;}
   .btn-logout{background:#e8eaee; color:#5c6270;}
 
-  select, input, textarea{font-family:inherit; font-size:14px; border:1px solid #dde1e8; border-radius:8px; padding:8px 10px;}
-  textarea{width:100%; min-height:70px; resize:vertical; line-height:1.5;}
+  select, input, textarea{font-family:inherit; font-size:16px; border:1px solid #dde1e8; border-radius:8px; padding:10px 12px;}
+  textarea{width:100%; min-height:150px; resize:vertical; line-height:1.7;}
 
   /* 날짜 탭 */
   .tabs{display:flex; align-items:center; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px;}
@@ -334,6 +334,7 @@ function renderDay(){
   const head = `<div class="bar" style="justify-content:space-between; align-items:center; margin-bottom:10px;"><b>📅 ${fmtTab(CURRENT)}</b><div style="display:flex; gap:6px;"><button class="btn btn-ghost" onclick="moveDate(-1)" ${di<=0?'disabled style="opacity:.3;"':''}>◀</button><button class="btn btn-ghost" onclick="moveDate(1)" ${di>=DATES.length-1?'disabled style="opacity:.3;"':''}>▶</button><button class="btn btn-ghost" onclick="renameDate()">✏ 날짜 변경</button><button class="btn btn-ghost" onclick="deleteDate()" ${DATES.length<=1?'disabled style="opacity:.3;"':''}>🗑 날짜 삭제</button></div></div>`;
   if(items.length===0){ list.innerHTML = head + '<div class="loading">이 날짜엔 아직 일정이 없습니다. 아래 ＋버튼으로 추가하세요.</div>'; return; }
   list.innerHTML = head + items.map(cardHtml).join('');
+  setTimeout(growAll, 0);
 }
 
 function cardHtml(e, i, arr){
@@ -343,7 +344,7 @@ function cardHtml(e, i, arr){
       <label>시간</label><input type="text" class="f-time" value="${escAttr(e.time)}" placeholder="예: 09:00-10:00" oninput="queueSave(this,${e.id})">
       <label>제목</label><input type="text" class="f-title" value="${escAttr(e.title)}" placeholder="일정 제목" onfocus="setActive(this)" oninput="queueSave(this,${e.id})">
       <label class="full">상세내용</label>
-      <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능" onfocus="setActive(this)" oninput="queueSave(this,${e.id})">${escText(e.detail)}</textarea>
+      <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능" onfocus="setActive(this)" oninput="autoGrow(this); queueSave(this,${e.id})">${escText(e.detail)}</textarea>
       <label class="full">이모지 넣기 <span style="font-weight:400;color:#8a90a0;font-size:12px;">(제목이나 상세 칸을 클릭한 뒤 이모지를 누르세요)</span></label>
       <div class="emoji-row full">${picks}</div>
       <input type="hidden" class="f-sort" value="${e.sort_order??0}">
@@ -386,6 +387,16 @@ function queueSave(el, id){
   if(st) st.textContent = '입력 중…';
   SAVE_TIMER = setTimeout(flushSave, 1000);
 }
+
+function autoGrow(el){
+  if(!el) return;
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 4) + 'px';
+}
+function growAll(){
+  document.querySelectorAll('textarea').forEach(autoGrow);
+}
+
 async function flushSave(){
   clearTimeout(SAVE_TIMER);
   if(!PENDING) return;
@@ -473,12 +484,13 @@ function renderPrayers(){
         </div>
       </div>
       <input id="pt-${p.id}" oninput="queuePrayerSave(${p.id})" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
-      <textarea id="pc-${p.id}" oninput="queuePrayerSave(${p.id})" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
+      <textarea id="pc-${p.id}" oninput="autoGrow(this); queuePrayerSave(${p.id})" placeholder="내용" style="width:100%; min-height:150px;">${p.content||''}</textarea>
       <div class="bar" style="margin-top:8px; align-items:center; gap:10px;">
         <button class="btn btn-primary" onclick="savePrayer(${p.id})">💾 저장</button>
         <span id="pst-${p.id}" style="font-size:12px; color:#8a909c;"></span>
       </div>
     </div>`).join('');
+  setTimeout(growAll, 0);
 }
 
 async function addPrayer(){
