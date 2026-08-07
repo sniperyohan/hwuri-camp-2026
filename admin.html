@@ -444,6 +444,7 @@ async function addItem(){
 let PRAYERS = [];
 
 async function loadPrayers(){
+  await flushPrayerSave();
   if(!CURRENT_TAB) CURRENT_TAB = (getTabs()[0]||{}).id;
   const { data, error } = await sb.from('prayers')
     .select('*').eq('camp_id', CAMP.id).eq('tab_id', CURRENT_TAB).order('sort_order');
@@ -472,10 +473,11 @@ function renderPrayers(){
           <button class="btn btn-ghost" onclick="delPrayer(${p.id})">🗑 삭제</button>
         </div>
       </div>
-      <input id="pt-${p.id}" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
-      <textarea id="pc-${p.id}" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
-      <div class="bar" style="margin-top:8px;">
+      <input id="pt-${p.id}" oninput="queuePrayerSave(${p.id})" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
+      <textarea id="pc-${p.id}" oninput="queuePrayerSave(${p.id})" placeholder="내용" style="width:100%; min-height:60px;">${p.content||''}</textarea>
+      <div class="bar" style="margin-top:8px; align-items:center; gap:10px;">
         <button class="btn btn-primary" onclick="savePrayer(${p.id})">💾 저장</button>
+        <span id="pst-${p.id}" style="font-size:12px; color:#8a909c;"></span>
       </div>
     </div>`).join('');
 }
@@ -524,7 +526,33 @@ async function moveTab(id, dir){
   if(await saveTabs(tabs)){ renderTabs(); renderPrayers(); }
 }
 
+let pSaveTimer = null, pSaveId = null;
+
+function queuePrayerSave(id){
+  pSaveId = id;
+  const st = document.getElementById('pst-'+id);
+  if(st) st.textContent = '입력 중…';
+  clearTimeout(pSaveTimer);
+  pSaveTimer = setTimeout(()=>flushPrayerSave(), 1000);
+}
+
+async function flushPrayerSave(){
+  clearTimeout(pSaveTimer);
+  const id = pSaveId;
+  if(!id) return;
+  pSaveId = null;
+  const te = document.getElementById('pt-'+id);
+  const ce = document.getElementById('pc-'+id);
+  if(!te || !ce) return;
+  const st = document.getElementById('pst-'+id);
+  const { error } = await sb.from('prayers')
+    .update({ title: te.value, content: ce.value }).eq('id', id);
+  if(st) st.textContent = error ? '⚠ 저장 실패' : '✔ 저장됨';
+}
+
 async function savePrayer(id){
+  const title = document.getElementById('pt-'+id).value;
+  ...
   const title = document.getElementById('pt-'+id).value;
   const content = document.getElementById('pc-'+id).value;
   const { error } = await sb.from('prayers').update({ title, content }).eq('id', id);
