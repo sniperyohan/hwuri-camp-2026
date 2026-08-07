@@ -299,6 +299,7 @@
   }
 
   let PRAYERS = [];
+  let LOCKED = {};
   let TABS = [];
   function getTabs(){
     let t = camp && camp.tabs;
@@ -311,10 +312,12 @@
       .select('id, title, content, is_public, sort_order, tab_id')
       .eq('camp_id', campId).order('sort_order', {ascending:true});
     PRAYERS = (error || !data) ? [] : data;
-    if(!PRAYERS.length) return;
     TABS = getTabs();
     const first = (TABS[0]||{}).id || 't1';
-    const shown = TABS.filter(tab => PRAYERS.some(p => (p.tab_id||first) === tab.id));
+    LOCKED = {};
+    const { data: lc } = await sb.rpc('locked_prayer_counts', { p_camp_id: campId });
+    (lc||[]).forEach(r=>{ const k = r.tab_id || first; LOCKED[k] = (LOCKED[k]||0) + r.cnt; });
+    const shown = TABS.filter(tab => PRAYERS.some(p => (p.tab_id||first) === tab.id) || (LOCKED[tab.id]||0) > 0);
     if(!shown.length) return;
     const divider=document.createElement('span');
     divider.className='tab-divider';
@@ -333,7 +336,7 @@
     const tid = tabId || first;
     document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.date==='__prayer__'+tid));
     let html = '';
-    let lockedCount = 0;
+    const lockedCount = LOCKED[tid] || 0;
     PRAYERS.filter(p => (p.tab_id||first) === tid).forEach(p=>{
       if(p.is_public){
         const title = (p.title||'').replace(/</g,'&lt;');
@@ -342,8 +345,6 @@
           <div class="p-title">🙏 ${title}</div>
           ${content ? `<div class="p-content">${content}</div>` : ''}
         </div>`;
-      } else {
-        lockedCount++;
       }
     });
     for(let i=0; i<lockedCount; i++){
