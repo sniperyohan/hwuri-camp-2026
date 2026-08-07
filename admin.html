@@ -552,8 +552,6 @@ async function flushPrayerSave(){
 
 async function savePrayer(id){
   const title = document.getElementById('pt-'+id).value;
-  ...
-  const title = document.getElementById('pt-'+id).value;
   const content = document.getElementById('pc-'+id).value;
   const { error } = await sb.from('prayers').update({ title, content }).eq('id', id);
   if(error){ alert('저장 실패: '+error.message); return; }
