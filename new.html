@@ -51,6 +51,10 @@
       <label>주소(slug)</label>
       <input type="text" id="slug" placeholder="예: youth-2026">
       <div class="hint">영문 소문자·숫자·하이픈(-)만 사용하세요. 링크 주소에 들어갑니다.</div>
+      <div id="ownerBox" style="display:none;">
+        <label>담당 계정 (슈퍼관리자 전용)</label>
+        <select id="ownerSel" style="width:100%; padding:11px 12px; font-size:15px; border:1px solid #dde1e8; border-radius:8px; font-family:inherit;"></select>
+      </div>
       <button class="btn" onclick="createCamp()">스케줄러 만들기</button>
       <div class="result" id="result"></div>
     </div>
@@ -59,12 +63,25 @@
 
 <script>
 
+const SUPER_ADMIN = 'bcc871ee-6e51-4f24-92d9-b4a72572135c';
+
 async function init(){
   const { data:{ session } } = await sb.auth.getSession();
-  if(session){ document.getElementById('app').style.display=''; }
+  if(session){ document.getElementById('app').style.display=''; await fillOwners(); }
   else { document.getElementById('login').style.display=''; }
 }
 init();
+
+async function fillOwners(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user || user.id !== SUPER_ADMIN) return;
+  const { data: accs } = await sb.from('account_labels').select('*').order('label');
+  const sel = document.getElementById('ownerSel');
+  sel.innerHTML = (accs||[]).map(a =>
+    `<option value="${a.user_id}"${a.user_id===user.id?' selected':''}>${a.label}${a.email?' ('+a.email+')':''}</option>`
+  ).join('');
+  document.getElementById('ownerBox').style.display='';
+}
 
 async function tryLogin(){
   const email = document.getElementById('email').value;
@@ -90,7 +107,10 @@ async function createCamp(){
   const { data: exist } = await sb.from('camps').select('id').eq('slug', slug).maybeSingle();
   if(exist){ alert('이미 사용 중인 주소입니다. 다른 주소를 입력하세요.'); return; }
 
-  const { error } = await sb.from('camps').insert({ title, subtitle, start_date, end_date, slug });
+  const { data:{ user } } = await sb.auth.getUser();
+  const sel = document.getElementById('ownerSel');
+  const owner = (user.id === SUPER_ADMIN && sel && sel.value) ? sel.value : user.id;
+  const { error } = await sb.from('camps').insert({ title, subtitle, start_date, end_date, slug, owner });
   if(error){ alert('생성 실패: '+error.message); return; }
 
   const base = location.href.replace(/new\.html.*$/, '');
