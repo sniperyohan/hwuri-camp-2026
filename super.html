@@ -26,6 +26,7 @@
   .btn-primary{background:#4a5b7c; color:#fff;}
   .btn-view{background:#5e8a68; color:#fff;}
   .btn-ghost{background:#eef1f6; color:#4a5b7c;}
+  .btn-danger{background:#f3e3e3; color:#b23b3b;}
   .btn-logout{background:#e8eaee; color:#5c6270;}
 
   .card{background:#fff; border-radius:14px; padding:18px 20px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.04);}
@@ -137,6 +138,7 @@ function cardHtml(c){
         <a class="btn btn-primary" href="admin.html?c=${c.slug}">⚙ 관리</a>
         <a class="btn btn-view" href="camp.html?c=${c.slug}" target="_blank">👁 뷰어</a>
         <button class="btn btn-ghost" onclick="copyLink('${c.slug}')">🔗 링크 복사</button>
+        <button class="btn btn-danger" onclick="deleteCamp(${c.id}, '${c.slug}')">🗑 삭제</button>
       </div>
       <div class="row">
         <input type="text" readonly value="${location.origin}${location.pathname.replace(/[^/]*$/,'')}camp.html?c=${c.slug}" style="flex:1; min-width:220px; background:#f7f8fa; color:#5c6270;" onclick="this.select()">
@@ -153,6 +155,21 @@ async function changeOwner(campId, newOwner){
   const { error } = await sb.from('camps').update({ owner }).eq('id', campId).select();
   if(error){ alert('변경 실패: ' + error.message); return; }
   alert('담당 계정이 변경되었습니다.');
+  loadDashboard();
+}
+
+async function deleteCamp(campId, slug){
+  const typed = prompt(
+    '⚠ 이 스케줄러와 안에 든 모든 일정·기도제목이 영구 삭제됩니다.\n' +
+    '되돌릴 수 없습니다.\n\n' +
+    '정말 지우려면 아래에 슬러그를 그대로 입력하세요:\n' + slug
+  );
+  if(typed === null) return;
+  if(typed.trim() !== slug){ alert('입력이 일치하지 않아 취소했습니다.'); return; }
+
+  const { error } = await sb.from('camps').delete().eq('id', campId).select();
+  if(error){ alert('삭제 실패: ' + error.message); return; }
+  alert('삭제되었습니다.');
   loadDashboard();
 }
 
