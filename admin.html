@@ -379,6 +379,8 @@ function cardHtml(e, i, arr){
           <label class="up-btn">📷 사진 넣기<input type="file" accept="image/*" multiple hidden onchange="uploadImages(this,${e.id},'event')"></label>
           <span class="up-msg"></span>
           <div class="thumbs" data-tid="event-${e.id}"></div>
+          <div class="cap" style="margin-top:10px;">유튜브·구글드라이브 등 외부 주소를 링크로 넣습니다</div>
+          <span class="up-btn" style="background:#4a5b7c;" onclick="addLink(${e.id},'event')">🔗 외부 링크 넣기</span>
         </div>
       </details>
       <input type="hidden" class="f-sort" value="${e.sort_order??0}">
@@ -471,6 +473,21 @@ function insertSnippet(el, snippet){
   const pos = s + pre.length + snippet.length;
   el.setSelectionRange(pos, pos);
   autoGrow(el);
+}
+
+function addLink(id, kind){
+  const el = targetEl(id, kind);
+  if(!el) return;
+  let url = prompt('링크 주소를 붙여넣으세요 (https://...)', '');
+  if(!url) return;
+  url = url.trim();
+  if(!/^https?:\/\//i.test(url)){ alert('https:// 로 시작하는 주소만 넣을 수 있습니다.'); return; }
+  if(/["'<>]/.test(url)){ alert('주소에 사용할 수 없는 문자가 있습니다.'); return; }
+  let name = prompt('링크에 표시할 글자를 적어주세요', '자세히 보기');
+  if(name === null) return;
+  name = (name || '자세히 보기').replace(/[<>]/g,'').trim();
+  insertSnippet(el, `<a href="${url}" target="_blank" style="text-decoration:underline;">🔗 ${name}</a>`);
+  if(kind === 'prayer') queuePrayerSave(id); else queueSave(el, id);
 }
 
 function shrinkImage(file, maxW){
@@ -660,6 +677,8 @@ function renderPrayers(){
           <label class="up-btn">📷 사진 넣기<input type="file" accept="image/*" multiple hidden onchange="uploadImages(this,${p.id},'prayer')"></label>
           <span class="up-msg"></span>
           <div class="thumbs" data-tid="prayer-${p.id}"></div>
+          <div class="cap" style="margin-top:10px;">유튜브·구글드라이브 등 외부 주소를 링크로 넣습니다</div>
+          <span class="up-btn" style="background:#4a5b7c;" onclick="addLink(${p.id},'prayer')">🔗 외부 링크 넣기</span>
         </div>
       </details>
       <div class="bar" style="margin-top:8px; align-items:center; gap:10px;">
