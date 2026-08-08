@@ -368,6 +368,15 @@
     });
   }
 
+  // 상세내용 안의 링크 → 기도제목 탭으로 이동
+  window.goPrayer = function(key){
+    const norm = s => String(s||'').replace(/\s/g,'');
+    const t = (TABS||[]).find(x => x.id===key || norm(x.name)===norm(key));
+    if(!t){ alert('탭을 찾을 수 없습니다: ' + key); return; }
+    renderPrayers(t.id);
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+
   function render(date){
     document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.date===date));
     const list = byDate[date] || [];
