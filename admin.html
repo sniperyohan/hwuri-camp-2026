@@ -59,6 +59,16 @@
   .tools .cap{font-size:12px; color:#8a90a0; margin:2px 0 5px;}
   .up-btn{display:inline-block; cursor:pointer; font-size:12.5px; font-weight:700; color:#fff; background:#5e8a68; border-radius:6px; padding:6px 11px;}
   .up-msg{font-size:12px; color:#5e8a68; font-weight:700; margin-left:8px;}
+  .thumbs{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .thumb{position:relative; width:76px; border:1px solid #dde1e8; border-radius:8px; background:#fff; padding:4px; cursor:grab;}
+  .thumb img{width:100%; height:76px; object-fit:cover; border-radius:5px; display:block; pointer-events:none;}
+  .thumb.drag{opacity:.4;}
+  .thumb.over{border-color:#5e8a68; box-shadow:0 0 0 2px #cfe0cf;}
+  .thumb .n{position:absolute; top:6px; left:6px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; font-weight:700; border-radius:4px; padding:1px 5px;}
+  .thumb .mv{display:flex; justify-content:space-between; margin-top:3px;}
+  .thumb .mv button{border:none; background:#eef1f6; color:#4a5b7c; font-size:12px; font-weight:700; border-radius:4px; padding:2px 8px; cursor:pointer;}
+  .thumb .mv button:hover{background:#dfe5ef;}
+
   .card-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px;}
   .loading{text-align:center; color:#8a909c; padding:40px;}
   .toggle{display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;}
@@ -360,7 +370,7 @@ function cardHtml(e, i, arr){
       <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능" onfocus="setActive(this)" oninput="autoGrow(this); queueSave(this,${e.id})">${escText(e.detail)}</textarea>
       <label class="full">이모지 넣기 <span style="font-weight:400;color:#8a90a0;font-size:12px;">(제목이나 상세 칸을 클릭한 뒤 이모지를 누르세요)</span></label>
       <div class="emoji-row full">${picks}</div>
-      <details class="tools">
+      <details class="tools" ontoggle="if(this.open) renderThumbs(${e.id},'event')">
         <summary>탭 링크 · 사진 첨부</summary>
         <div class="inner">
           <div class="cap">누르면 상세내용에 '해당 탭으로 이동' 링크가 들어갑니다</div>
@@ -368,6 +378,7 @@ function cardHtml(e, i, arr){
           <div class="cap" style="margin-top:10px;">사진은 자동으로 줄여서 올라갑니다 (여러 장 선택 가능)</div>
           <label class="up-btn">📷 사진 넣기<input type="file" accept="image/*" multiple hidden onchange="uploadImages(this,${e.id},'event')"></label>
           <span class="up-msg"></span>
+          <div class="thumbs" data-tid="event-${e.id}"></div>
         </div>
       </details>
       <input type="hidden" class="f-sort" value="${e.sort_order??0}">
@@ -396,6 +407,58 @@ function addEmoji(id, em){
   const pos = s + em.length;
   el.setSelectionRange(pos, pos);
   ACTIVE_FIELD = el;
+}
+
+const imgRe = () => /<img\b[^>]*>/gi;
+
+function targetEl(id, kind){
+  return (kind === 'prayer')
+    ? document.getElementById('pc-' + id)
+    : document.querySelector(`.card[data-id="${id}"] .f-detail`);
+}
+
+function renderThumbs(id, kind){
+  const el = targetEl(id, kind);
+  const box = document.querySelector(`.thumbs[data-tid="${kind}-${id}"]`);
+  if(!el || !box) return;
+  const tags = el.value.match(imgRe()) || [];
+  box.innerHTML = tags.map((t, i)=>{
+    const src = (t.match(/src="([^"]*)"/i) || [])[1] || '';
+    return `<div class="thumb" draggable="true" data-i="${i}" title="끌어서 순서 변경">
+      <img src="${src}"><span class="n">${i+1}</span>
+      <div class="mv">
+        <button type="button" onclick="moveImg(${id},'${kind}',${i},${i-1})">◀</button>
+        <button type="button" onclick="moveImg(${id},'${kind}',${i},${i+1})">▶</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  let from = null;
+  box.querySelectorAll('.thumb').forEach(t=>{
+    t.ondragstart = e => { from = +t.dataset.i; t.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; };
+    t.ondragend   = () => t.classList.remove('drag');
+    t.ondragover  = e => { e.preventDefault(); t.classList.add('over'); };
+    t.ondragleave = () => t.classList.remove('over');
+    t.ondrop      = e => {
+      e.preventDefault(); t.classList.remove('over');
+      const to = +t.dataset.i;
+      if(from !== null && from !== to) moveImg(id, kind, from, to);
+    };
+  });
+}
+
+function moveImg(id, kind, from, to){
+  const el = targetEl(id, kind);
+  if(!el) return;
+  const arr = el.value.match(imgRe()) || [];
+  if(from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
+  const [m] = arr.splice(from, 1);
+  arr.splice(to, 0, m);
+  let k = 0;
+  el.value = el.value.replace(imgRe(), ()=> arr[k++]);
+  autoGrow(el);
+  renderThumbs(id, kind);
+  if(kind === 'prayer') queuePrayerSave(id); else queueSave(el, id);
 }
 
 function insertSnippet(el, snippet){
@@ -454,6 +517,7 @@ async function uploadImages(input, id, kind){
       return;
     }
   }
+  renderThumbs(id, kind);
   msg.textContent = `완료 (${files.length}장)`;
   setTimeout(()=>{ msg.textContent = ''; }, 3000);
   if(kind === 'prayer') queuePrayerSave(id); else queueSave(el, id);
@@ -589,12 +653,13 @@ function renderPrayers(){
       </div>
       <input id="pt-${p.id}" oninput="queuePrayerSave(${p.id})" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
       <textarea id="pc-${p.id}" oninput="autoGrow(this); queuePrayerSave(${p.id})" placeholder="내용" style="width:100%; min-height:150px;">${p.content||''}</textarea>
-      <details class="tools">
+      <details class="tools" ontoggle="if(this.open) renderThumbs(${p.id},'prayer')">
         <summary>사진 첨부</summary>
         <div class="inner">
           <div class="cap">사진은 자동으로 줄여서 올라갑니다 (여러 장 선택 가능)</div>
           <label class="up-btn">📷 사진 넣기<input type="file" accept="image/*" multiple hidden onchange="uploadImages(this,${p.id},'prayer')"></label>
           <span class="up-msg"></span>
+          <div class="thumbs" data-tid="prayer-${p.id}"></div>
         </div>
       </details>
       <div class="bar" style="margin-top:8px; align-items:center; gap:10px;">
