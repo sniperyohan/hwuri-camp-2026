@@ -352,7 +352,8 @@
     PRAYERS.filter(p => (p.tab_id||first) === tid).forEach(p=>{
       if(p.is_public){
         const title = (p.title||'').replace(/</g,'&lt;');
-        const content = (p.content||'').replace(/</g,'&lt;');
+        const content = (p.content||'').replace(/</g,'&lt;')
+          .replace(/&lt;(\/?)(img|a|br)\b([^>]*)>/gi, '<$1$2$3>');
         html += `<div class="prayer-card">
           <div class="p-title">🙏 ${title}</div>
           ${content ? `<div class="p-content">${content}</div>` : ''}
