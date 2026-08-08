@@ -47,6 +47,8 @@
   .emoji-row{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
   .emoji-pick{cursor:pointer; font-size:18px; background:#f4f5f8; border:1px solid #e8eaee; border-radius:6px; padding:2px 6px;}
   .emoji-pick:hover{background:#e8eaee;}
+  .link-pick{cursor:pointer; font-size:12.5px; font-weight:700; color:#4a5b7c; background:#eef1f6; border:1px solid #dde1e8; border-radius:6px; padding:4px 9px;}
+  .link-pick:hover{background:#dfe5ef;}
   .card-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px;}
   .loading{text-align:center; color:#8a909c; padding:40px;}
   .toggle{display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;}
@@ -339,6 +341,7 @@ function renderDay(){
 
 function cardHtml(e, i, arr){
   const picks = EMOJIS.map(em=>`<span class="emoji-pick" onclick="addEmoji(${e.id},'${em}')">${em}</span>`).join('');
+  const links = getTabs().map(t=>`<span class="link-pick" onclick="addTabLink(${e.id},'${t.id}')">🔗 ${esc(t.name)}</span>`).join('');
   return `<div class="card" data-id="${e.id}">
     <div class="fields">
       <label>시간</label><input type="text" class="f-time" value="${escAttr(e.time)}" placeholder="예: 09:00-10:00" oninput="queueSave(this,${e.id})">
@@ -347,6 +350,8 @@ function cardHtml(e, i, arr){
       <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능" onfocus="setActive(this)" oninput="autoGrow(this); queueSave(this,${e.id})">${escText(e.detail)}</textarea>
       <label class="full">이모지 넣기 <span style="font-weight:400;color:#8a90a0;font-size:12px;">(제목이나 상세 칸을 클릭한 뒤 이모지를 누르세요)</span></label>
       <div class="emoji-row full">${picks}</div>
+      <label class="full">탭 링크 넣기 <span style="font-weight:400;color:#8a90a0;font-size:12px;">(누르면 상세내용에 '해당 탭으로 이동' 링크가 들어갑니다)</span></label>
+      <div class="emoji-row full">${links}</div>
       <input type="hidden" class="f-sort" value="${e.sort_order??0}">
     </div>
     <div class="card-actions">
@@ -373,6 +378,26 @@ function addEmoji(id, em){
   const pos = s + em.length;
   el.setSelectionRange(pos, pos);
   ACTIVE_FIELD = el;
+}
+
+function addTabLink(id, tabId){
+  const tab = getTabs().find(t=>t.id===tabId);
+  if(!tab) return;
+  const name = String(tab.name||'').replace(/['"<>]/g,'').trim();
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  const el = card.querySelector('.f-detail');
+  const snippet = `<a href="javascript:void(0)" onclick="goPrayer('${name}')" style="text-decoration:underline; cursor:pointer;">👉 '${name}' 이동하기</a>`;
+  const s = el.selectionStart ?? el.value.length;
+  const eEnd = el.selectionEnd ?? el.value.length;
+  const before = el.value.slice(0, s);
+  const pre = (before && !before.endsWith('\n')) ? '\n' : '';
+  el.value = before + pre + snippet + el.value.slice(eEnd);
+  el.focus();
+  const pos = s + pre.length + snippet.length;
+  el.setSelectionRange(pos, pos);
+  ACTIVE_FIELD = el;
+  autoGrow(el);
+  queueSave(el, id);
 }
 
 function escAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
