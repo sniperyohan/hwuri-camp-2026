@@ -53,7 +53,7 @@
 <div class="wrap" id="wrap"><div class="msg">불러오는 중...</div></div>
 
 <script>
-let CAMP=null, SURVEY=null, QS=[], RESP=[], TAB='edit';
+let CAMP=null, SURVEY=null, QS=[], RESP=[], TAB='edit', ONLYCUR=true;
 const SLUG = new URLSearchParams(location.search).get('c');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const TYPES = {text:'단답형', long:'장문형', choice:'객관식(1개)', multi:'객관식(여러개)'};
@@ -174,13 +174,12 @@ async function renderRes(){
 
   if(!RESP.length){ body.innerHTML = '<div class="card"><div class="msg">아직 응답이 없습니다.</div></div>'; return; }
 
-  const cols = [];
-  QS.forEach(q=>{ if(q.label && !cols.includes(q.label)) cols.push(q.label); });
-  RESP.forEach(r=>Object.keys(r.answers||{}).forEach(k=>{ if(!cols.includes(k)) cols.push(k); }));
+  const cols = colList();
 
   let h = `<div class="bar">
       <div class="cnt" style="align-self:center">총 ${RESP.length}명 응답</div>
       <div style="flex:1"></div>
+      <label class="chk" style="align-self:center"><input type="checkbox" ${ONLYCUR?'checked':''} onchange="ONLYCUR=this.checked; renderRes()"> 현재 문항만</label>
       <button class="btn line" onclick="renderRes()">새로고침</button>
       <button class="btn" onclick="downloadCsv()">엑셀 다운로드</button>
     </div><div class="card">`;
@@ -220,10 +219,15 @@ async function delResp(id){
   renderRes();
 }
 
-function downloadCsv(){
+function colList(){
   const cols = [];
   QS.forEach(q=>{ if(q.label && !cols.includes(q.label)) cols.push(q.label); });
-  RESP.forEach(r=>Object.keys(r.answers||{}).forEach(k=>{ if(!cols.includes(k)) cols.push(k); }));
+  if(!ONLYCUR) RESP.forEach(r=>Object.keys(r.answers||{}).forEach(k=>{ if(!cols.includes(k)) cols.push(k); }));
+  return cols;
+}
+
+function downloadCsv(){
+  const cols = colList();
   const cell = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
   const lines = [['번호','제출시각',...cols].map(cell).join(',')];
   RESP.forEach((r,i)=>{
