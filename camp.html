@@ -183,6 +183,8 @@
   </div>
 
   <div class="tabs" id="tabs"></div>
+  <div class="tabs" id="tabs2"></div>
+  <div class="tabs" id="tabs3"></div>
   <div id="content"><div class="loading">불러오는 중...</div></div>
 
   <div class="footer" id="footer">
@@ -302,7 +304,7 @@
   updateProgress();
   const WEEK = ['일','월','화','수','목','금','토'];
   const tabsEl = document.getElementById('tabs');
-  const SURVEY_URL = '';
+  const SURVEY_URL = 'survey.html?c=' + slug;
   const localDateStr = (dt)=>{ const d=dt||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
   const todayStr = localDateStr();
 
