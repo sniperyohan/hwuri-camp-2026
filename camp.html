@@ -167,7 +167,8 @@
   font-family:inherit; font-size:15px; font-weight:800; color:#fff; cursor:pointer; z-index:50;
   background:linear-gradient(135deg,#5e8a68,#84b58c);
   box-shadow:0 8px 24px rgba(94,138,104,.45); overflow:hidden;
-  animation:fabIn .5s ease-out, fabPulse 2.4s ease-in-out 1s infinite;}
+  animation:fabIn .5s ease-out, fabPulse 2.4s ease-in-out 1s infinite;
+  transform-origin:top center;}
 #surveyFab:active{transform:translateX(-50%) scale(.96);}
 #surveyFab::after{content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
   background:linear-gradient(120deg,transparent,rgba(255,255,255,.5),transparent);
@@ -178,7 +179,17 @@
 @keyframes fabPulse{0%,100%{box-shadow:0 8px 24px rgba(94,138,104,.45);} 50%{box-shadow:0 10px 32px rgba(94,138,104,.8);}}
 @keyframes fabShine{0%{left:-60%;} 60%,100%{left:120%;}}
 @keyframes fabDot{0%{box-shadow:0 0 0 0 rgba(255,224,138,.8);} 70%{box-shadow:0 0 0 10px rgba(255,224,138,0);} 100%{box-shadow:0 0 0 0 rgba(255,224,138,0);}}
-@media (prefers-reduced-motion:reduce){#surveyFab,#surveyFab::after,#surveyFab .dot{animation:none;}}
+#surveyFab .bell{display:inline-block; transform-origin:50% 0;
+  animation:bellRing 3.6s ease-in-out 1.2s infinite;}
+@keyframes bellRing{
+  0%,72%,100%{transform:rotate(0);}
+  74%{transform:rotate(16deg);}  77%{transform:rotate(-14deg);}
+  80%{transform:rotate(11deg);}  83%{transform:rotate(-9deg);}
+  86%{transform:rotate(6deg);}   89%{transform:rotate(-4deg);}
+  92%{transform:rotate(2deg);}   95%{transform:rotate(0);}
+}
+
+@media (prefers-reduced-motion:reduce){#surveyFab,#surveyFab::after,#surveyFab .dot,#surveyFab .bell{animation:none;}}
 
 </style>
 </head>
@@ -458,7 +469,7 @@
     if(sv && sv.is_open !== false){
       const fab=document.createElement('button');
       fab.id='surveyFab';
-      fab.innerHTML='<span class="dot"></span>📝 설문조사 참여하기';
+      fab.innerHTML='<span class="dot"></span><span class="bell">📝</span> 설문조사 참여하기';
       fab.onclick=()=>window.open(SURVEY_URL,'_blank','noopener');
       document.body.appendChild(fab);
       if(tabsEl3) tabsEl3.style.display='none';
