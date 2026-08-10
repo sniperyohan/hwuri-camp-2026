@@ -23,6 +23,7 @@
   .stars{display:flex; gap:6px;}
   .star{flex:1; padding:10px 0; border:1px solid #e0e0e0; background:#fafafa; border-radius:10px; font-size:20px; cursor:pointer; line-height:1;}
   .star.on{background:#fff3e0; border-color:#e0a96d;}
+  .hint{font-size:12px; color:#8a8a8a; margin:-4px 0 8px;}
   .opts{display:flex; flex-direction:column; gap:8px;}
   .opt{border:1px solid #e0e0e0; background:#fafafa; border-radius:10px; padding:11px 13px; font-size:14px; text-align:left; cursor:pointer;}
   .opt.on{background:#eef3ee; border-color:#5e8a68; font-weight:700;}
@@ -50,14 +51,13 @@
 
   const DEFAULT_Q = [
     {id:'q1', type:'text',   label:'이름', required:true},
-    {id:'q2', type:'rating', label:'말씀 집회는 어떠셨나요?'},
-    {id:'q3', type:'rating', label:'찬양과 기도 시간은 어떠셨나요?'},
-    {id:'q4', type:'rating', label:'숙소는 편안하셨나요?'},
-    {id:'q5', type:'rating', label:'식사는 어떠셨나요?'},
-    {id:'q6', type:'rating', label:'전체적인 만족도를 평가해주세요.'},
-    {id:'q7', type:'choice', label:'다음 수련회에도 참석하시겠습니까?', options:['꼭 참석하겠습니다','아마도 참석','잘 모르겠습니다']},
-    {id:'q8', type:'long',   label:'받은 은혜를 나눠주세요.'},
-    {id:'q9', type:'long',   label:'개선했으면 하는 점이나 건의사항이 있다면 적어주세요.'}
+    {id:'q2', type:'choice', label:'참가 부서를 선택해주세요.', options:['유치부','초등부','중고등부','청년부','장년부'], required:true},
+    {id:'q3', type:'choice', label:'전체적으로 만족하셨습니까?', options:['매우 만족','만족','보통','아쉬움','매우 아쉬움'], required:true},
+    {id:'q4', type:'multi',  label:'가장 좋았던 프로그램을 모두 골라주세요.', options:['말씀 집회','찬양과 기도','조별 나눔','레크리에이션','야외 활동']},
+    {id:'q5', type:'choice', label:'숙소와 식사는 어떠셨나요?', options:['좋았습니다','보통입니다','불편했습니다']},
+    {id:'q6', type:'choice', label:'다음 수련회에도 참석하시겠습니까?', options:['꼭 참석하겠습니다','아마도 참석','잘 모르겠습니다']},
+    {id:'q7', type:'long',   label:'받은 은혜를 나눠주세요.'},
+    {id:'q8', type:'long',   label:'개선했으면 하는 점이나 건의사항을 적어주세요.'}
   ];
 
   if(!slug){ wrap.innerHTML = '<div class="msg">수련회를 지정해주세요.<br>예: ?c=covenant-summer</div>'; return; }
@@ -94,6 +94,9 @@
     } else if(q.type === 'choice'){
       body = '<div class="opts">' + (q.options||[]).map(o =>
         `<button type="button" class="opt" data-q="${q.id}" data-v="${esc(o)}">${esc(o)}</button>`).join('') + '</div>';
+    } else if(q.type === 'multi'){
+      body = '<div class="hint">여러 개 선택할 수 있습니다</div><div class="opts">' + (q.options||[]).map(o =>
+        `<button type="button" class="opt multi" data-q="${q.id}" data-v="${esc(o)}">${esc(o)}</button>`).join('') + '</div>';
     } else if(q.type === 'long'){
       body = `<textarea data-q="${q.id}" placeholder="자유롭게 적어주세요"></textarea>`;
     } else {
@@ -123,8 +126,17 @@
     }
     const op = e.target.closest('.opt');
     if(op){
-      ANSWERS[op.dataset.q] = op.dataset.v;
-      op.parentElement.querySelectorAll('.opt').forEach(b => b.classList.toggle('on', b === op));
+      const qid = op.dataset.q, val = op.dataset.v;
+      if(op.classList.contains('multi')){
+        const arr = Array.isArray(ANSWERS[qid]) ? ANSWERS[qid] : [];
+        const at = arr.indexOf(val);
+        if(at >= 0) arr.splice(at, 1); else arr.push(val);
+        ANSWERS[qid] = arr;
+        op.classList.toggle('on', at < 0);
+      } else {
+        ANSWERS[qid] = val;
+        op.parentElement.querySelectorAll('.opt').forEach(b => b.classList.toggle('on', b === op));
+      }
     }
   });
 
@@ -135,13 +147,18 @@
 
   document.getElementById('btnSubmit').addEventListener('click', async function(){
     for(const q of QS){
-      if(q.required && !ANSWERS[q.id]){ alert((q.label) + ' 항목을 입력해주세요.'); return; }
+      const v = ANSWERS[q.id];
+      const empty = (v == null || v === '' || (Array.isArray(v) && !v.length));
+      if(q.required && empty){ alert(q.label + ' 항목을 입력해주세요.'); return; }
     }
     this.disabled = true; this.textContent = '제출 중...';
 
     const nameQ = QS.find(q => /이름|성함/.test(q.label));
     const payload = {};
-    QS.forEach(q => { payload[q.label] = ANSWERS[q.id] ?? ''; });
+    QS.forEach(q => {
+      const v = ANSWERS[q.id];
+      payload[q.label] = Array.isArray(v) ? v.join(' / ') : (v ?? '');
+    });
 
     const { error } = await sb.from('survey_responses').insert({
       camp_id: CAMP.id,
