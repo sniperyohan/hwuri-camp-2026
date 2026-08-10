@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>수련회 설문조사</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0; background:#f4f1ea; font-family:Pretendard,-apple-system,sans-serif; color:#2e2e2e;}
+  .wrap{max-width:640px; margin:0 auto; padding:18px 14px 60px;}
+  .head{background:#5e8a68; color:#fff; border-radius:16px; padding:20px 18px; margin-bottom:16px;}
+  .head h1{margin:0 0 6px; font-size:20px;}
+  .head p{margin:0; font-size:13px; opacity:.9; line-height:1.6; white-space:pre-wrap;}
+  .q{background:#fff; border-radius:14px; padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .q .label{font-size:15px; font-weight:700; margin-bottom:10px; line-height:1.5;}
+  .q .req{color:#c0392b; margin-left:3px;}
+  input[type=text], textarea{width:100%; border:1px solid #ddd; border-radius:10px; padding:11px; font-size:15px; font-family:inherit; background:#fafafa;}
+  textarea{min-height:96px; resize:vertical; line-height:1.6;}
+  input[type=text]:focus, textarea:focus{outline:none; border-color:#5e8a68; background:#fff;}
+  .stars{display:flex; gap:6px;}
+  .star{flex:1; padding:10px 0; border:1px solid #e0e0e0; background:#fafafa; border-radius:10px; font-size:20px; cursor:pointer; line-height:1;}
+  .star.on{background:#fff3e0; border-color:#e0a96d;}
+  .opts{display:flex; flex-direction:column; gap:8px;}
+  .opt{border:1px solid #e0e0e0; background:#fafafa; border-radius:10px; padding:11px 13px; font-size:14px; text-align:left; cursor:pointer;}
+  .opt.on{background:#eef3ee; border-color:#5e8a68; font-weight:700;}
+  .submit{width:100%; padding:15px; border:0; border-radius:14px; background:#5e8a68; color:#fff; font-size:16px; font-weight:700; cursor:pointer; margin-top:6px;}
+  .submit:disabled{background:#aaa; cursor:default;}
+  .msg{text-align:center; padding:60px 20px; font-size:15px; line-height:1.8; color:#666;}
+  .done{background:#fff; border-radius:16px; padding:48px 20px; text-align:center;}
+  .done .big{font-size:40px; margin-bottom:12px;}
+  .done h2{margin:0 0 8px; font-size:19px; color:#5e8a68;}
+  .done p{margin:0; font-size:14px; color:#777; line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap"><div class="msg">불러오는 중...</div></div>
+
+<script>
+(async function(){
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('c');
+  const wrap = document.getElementById('wrap');
+  const ANSWERS = {};
+  let SURVEY = null, CAMP = null;
+
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  const DEFAULT_Q = [
+    {id:'q1', type:'text',   label:'이름', required:true},
+    {id:'q2', type:'rating', label:'말씀 집회는 어떠셨나요?'},
+    {id:'q3', type:'rating', label:'찬양과 기도 시간은 어떠셨나요?'},
+    {id:'q4', type:'rating', label:'숙소는 편안하셨나요?'},
+    {id:'q5', type:'rating', label:'식사는 어떠셨나요?'},
+    {id:'q6', type:'rating', label:'전체적인 만족도를 평가해주세요.'},
+    {id:'q7', type:'choice', label:'다음 수련회에도 참석하시겠습니까?', options:['꼭 참석하겠습니다','아마도 참석','잘 모르겠습니다']},
+    {id:'q8', type:'long',   label:'받은 은혜를 나눠주세요.'},
+    {id:'q9', type:'long',   label:'개선했으면 하는 점이나 건의사항이 있다면 적어주세요.'}
+  ];
+
+  if(!slug){ wrap.innerHTML = '<div class="msg">수련회를 지정해주세요.<br>예: ?c=covenant-summer</div>'; return; }
+
+  const { data: camp } = await sb.from('camps').select('*').eq('slug', slug).single();
+  if(!camp){ wrap.innerHTML = '<div class="msg">수련회를 찾을 수 없습니다.</div>'; return; }
+  CAMP = camp;
+
+  const { data: sv } = await sb.from('surveys').select('*').eq('camp_id', camp.id).maybeSingle();
+  SURVEY = sv || {title:'수련회 설문조사', intro:'', questions:DEFAULT_Q, is_open:true};
+  let QS = Array.isArray(SURVEY.questions) && SURVEY.questions.length ? SURVEY.questions : DEFAULT_Q;
+
+  if(SURVEY.is_open === false){
+    wrap.innerHTML = '<div class="msg">설문이 마감되었습니다.<br>참여해주셔서 감사합니다.</div>';
+    return;
+  }
+
+  const KEY = 'survey-done-' + camp.id;
+  if(localStorage.getItem(KEY)){ showDone(true); return; }
+
+  function showDone(already){
+    wrap.innerHTML = `<div class="done">
+      <div class="big">🙏</div>
+      <h2>${already ? '이미 참여하셨습니다' : '제출이 완료되었습니다'}</h2>
+      <p>소중한 의견 감사합니다.<br>더 좋은 수련회를 준비하겠습니다.</p>
+    </div>`;
+  }
+
+  function qHtml(q, i){
+    let body = '';
+    if(q.type === 'rating'){
+      body = '<div class="stars">' + [1,2,3,4,5].map(n =>
+        `<button type="button" class="star" data-q="${q.id}" data-v="${n}">★</button>`).join('') + '</div>';
+    } else if(q.type === 'choice'){
+      body = '<div class="opts">' + (q.options||[]).map(o =>
+        `<button type="button" class="opt" data-q="${q.id}" data-v="${esc(o)}">${esc(o)}</button>`).join('') + '</div>';
+    } else if(q.type === 'long'){
+      body = `<textarea data-q="${q.id}" placeholder="자유롭게 적어주세요"></textarea>`;
+    } else {
+      body = `<input type="text" data-q="${q.id}" placeholder="입력해주세요">`;
+    }
+    return `<div class="q">
+      <div class="label">${i+1}. ${esc(q.label)}${q.required?'<span class="req">*</span>':''}</div>
+      ${body}
+    </div>`;
+  }
+
+  wrap.innerHTML = `
+    <div class="head">
+      <h1>${esc(SURVEY.title || '수련회 설문조사')}</h1>
+      <p>${esc(SURVEY.intro || (camp.name || '') + ' 설문조사입니다.\n솔직한 의견을 들려주세요.')}</p>
+    </div>
+    ${QS.map(qHtml).join('')}
+    <button class="submit" id="btnSubmit">제출하기</button>`;
+
+  wrap.addEventListener('click', e => {
+    const st = e.target.closest('.star');
+    if(st){
+      const v = +st.dataset.v;
+      ANSWERS[st.dataset.q] = v;
+      st.parentElement.querySelectorAll('.star').forEach((b,idx) => b.classList.toggle('on', idx < v));
+      return;
+    }
+    const op = e.target.closest('.opt');
+    if(op){
+      ANSWERS[op.dataset.q] = op.dataset.v;
+      op.parentElement.querySelectorAll('.opt').forEach(b => b.classList.toggle('on', b === op));
+    }
+  });
+
+  wrap.addEventListener('input', e => {
+    const el = e.target;
+    if(el.dataset && el.dataset.q) ANSWERS[el.dataset.q] = el.value.trim();
+  });
+
+  document.getElementById('btnSubmit').addEventListener('click', async function(){
+    for(const q of QS){
+      if(q.required && !ANSWERS[q.id]){ alert((q.label) + ' 항목을 입력해주세요.'); return; }
+    }
+    this.disabled = true; this.textContent = '제출 중...';
+
+    const nameQ = QS.find(q => /이름|성함/.test(q.label));
+    const payload = {};
+    QS.forEach(q => { payload[q.label] = ANSWERS[q.id] ?? ''; });
+
+    const { error } = await sb.from('survey_responses').insert({
+      camp_id: CAMP.id,
+      name: nameQ ? (ANSWERS[nameQ.id] || '') : '',
+      answers: payload
+    });
+
+    if(error){
+      alert('제출에 실패했습니다.\n' + error.message);
+      this.disabled = false; this.textContent = '제출하기';
+      return;
+    }
+    try{ localStorage.setItem(KEY, '1'); }catch(e){}
+    showDone(false);
+  });
+})();
+</script>
+</body>
+</html>

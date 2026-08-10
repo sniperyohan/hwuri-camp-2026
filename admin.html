@@ -78,8 +78,9 @@
   .toggle input:checked + .track{background:#5e8a68;}
   .toggle input:checked + .track::after{transform:translateX(20px);}
   .toggle .lbl{font-size:13px; font-weight:700; color:#666;}
-  .tab-divider{display:inline-flex; align-items:center; margin:0 6px; color:#b0b0b0; font-size:16px;}
-  .tab-divider::before{content:"•";}
+  .tab-divider{display:none;}
+  #tabs2, #tabs3{margin-top:6px;}
+  .tab-survey{background:#fff3e0 !important; border:1px solid #e0a96d !important; color:#8a5a20 !important; font-weight:700;}
   .tab-prayer{background:#eef3ee !important; border:1px dashed #9bb89b !important;}
   .tab-prayer.active{background:#5e8a68 !important; color:#fff !important; border-style:solid !important;}
 </style>
@@ -116,6 +117,8 @@
     </div>
 
     <div class="tabs" id="tabs"></div>
+  <div class="tabs" id="tabs2"></div>
+  <div class="tabs" id="tabs3"></div>
 
     <div class="bar" id="dayBar">
       <button class="btn btn-add" onclick="addItem()">＋ 이 날짜에 항목 추가</button>
@@ -262,19 +265,24 @@ async function moveDate(dir){
 }
 
 function renderTabs(){
-  const t = document.getElementById('tabs');
-  let html='';
+  const t  = document.getElementById('tabs');
+  const t2 = document.getElementById('tabs2');
+
+  let h1='';
   DATES.forEach(d=>{
-    html += `<button class="tab${(VIEW==='day'&&d===CURRENT)?' active':''}" onclick="selectDay('${d}')">${fmtTab(d)}</button>`;
+    h1 += `<button class="tab${(VIEW==='day'&&d===CURRENT)?' active':''}" onclick="selectDay('${d}')">${fmtTab(d)}</button>`;
   });
-  html += `<button class="tab addtab" onclick="addNewDate()">＋ 날짜</button>`;
-  html += `<span class="tab-divider"></span>`;
+  h1 += `<button class="tab addtab" onclick="addNewDate()">＋ 날짜</button>`;
+
+  let h2='';
   getTabs().forEach(tab=>{
     const on = (VIEW==='prayer' && tab.id===CURRENT_TAB);
-    html += `<button class="tab tab-prayer${on?' active':''}" onclick="selectPrayer('${tab.id}')">🙏 ${esc(tab.name)}</button>`;
+    h2 += `<button class="tab tab-prayer${on?' active':''}" onclick="selectPrayer('${tab.id}')">🙏 ${esc(tab.name)}</button>`;
   });
-  html += `<button class="tab addtab" onclick="addTab()">＋ 탭</button>`;
-  t.innerHTML = html;
+  h2 += `<button class="tab addtab" onclick="addTab()">＋ 탭</button>`;
+
+  if(t2){ t.innerHTML = h1; t2.innerHTML = h2; }
+  else  { t.innerHTML = h1 + h2; }
 }
 
 function selectDay(d){

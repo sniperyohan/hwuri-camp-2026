@@ -302,6 +302,7 @@
   updateProgress();
   const WEEK = ['일','월','화','수','목','금','토'];
   const tabsEl = document.getElementById('tabs');
+  const SURVEY_URL = '';
   const localDateStr = (dt)=>{ const d=dt||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
   const todayStr = localDateStr();
 
@@ -427,6 +428,16 @@
   });
 
   await loadPrayers(camp.id);
+
+  // 셋째 줄: 설문조사 버튼
+  const tabsEl3 = document.getElementById('tabs3');
+  if(tabsEl3 && typeof SURVEY_URL === 'string' && SURVEY_URL){
+    const s=document.createElement('button');
+    s.className='tab tab-survey';
+    s.textContent='📝 설문조사';
+    s.onclick=()=>window.open(SURVEY_URL,'_blank','noopener');
+    tabsEl3.appendChild(s);
+  }
 
   const startDate = dates.includes(todayStr) ? todayStr : dates[0];
   if(startDate) render(startDate);
