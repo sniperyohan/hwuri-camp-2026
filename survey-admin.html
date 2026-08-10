@@ -184,7 +184,6 @@ async function renderRes(){
       <div style="flex:1"></div>
       <label class="chk" style="align-self:center"><input type="checkbox" ${ONLYCUR?'checked':''} onchange="ONLYCUR=this.checked; renderRes()"> 현재 문항만</label>
       <button class="btn line" onclick="renderRes()">새로고침</button>
-      <button class="btn line" onclick="delSelected()" style="color:#c0392b;border-color:#e0b4ae">선택 삭제</button>
       <button class="btn" onclick="downloadCsv()">엑셀 다운로드</button>
     </div><div class="card">`;
 
@@ -203,6 +202,9 @@ async function renderRes(){
   });
   h += `</div>`;
 
+  h += `<div style="display:flex;justify-content:flex-end;margin:0 0 8px">
+      <button class="btn line" onclick="delSelected()" style="color:#c0392b;border-color:#e0b4ae">선택 삭제</button>
+    </div>`;
   h += `<div class="card scroll"><table><thead><tr><th style="width:34px"><input type="checkbox" onclick="toggleAll(this)"></th><th>#</th><th>제출시각</th>` +
     cols.map(c=>`<th>${esc(c)}</th>`).join('') + `</tr></thead><tbody>` +
     RESP.map((r,i)=>{
