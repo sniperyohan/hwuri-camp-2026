@@ -47,6 +47,9 @@
   .barline .ct{width:52px; text-align:right; font-size:12px; color:#666; flex:0 0 auto;}
   .msg{padding:40px; text-align:center; color:#888;}
   .cnt{font-size:13px; color:#5e8a68; font-weight:700;}
+  table td{ min-width:90px; vertical-align:top; }
+table td:nth-child(n+4){ min-width:160px; max-width:320px; word-break:break-word; }
+
 </style>
 </head>
 <body>
@@ -181,6 +184,7 @@ async function renderRes(){
       <div style="flex:1"></div>
       <label class="chk" style="align-self:center"><input type="checkbox" ${ONLYCUR?'checked':''} onchange="ONLYCUR=this.checked; renderRes()"> 현재 문항만</label>
       <button class="btn line" onclick="renderRes()">새로고침</button>
+      <button class="btn line" onclick="delSelected()" style="color:#c0392b;border-color:#e0b4ae">선택 삭제</button>
       <button class="btn" onclick="downloadCsv()">엑셀 다운로드</button>
     </div><div class="card">`;
 
@@ -199,19 +203,30 @@ async function renderRes(){
   });
   h += `</div>`;
 
-  h += `<div class="card scroll"><table><thead><tr><th>#</th><th>제출시각</th>` +
-    cols.map(c=>`<th>${esc(c)}</th>`).join('') + `<th></th></tr></thead><tbody>` +
+  h += `<div class="card scroll"><table><thead><tr><th style="width:34px"><input type="checkbox" onclick="toggleAll(this)"></th><th>#</th><th>제출시각</th>` +
+    cols.map(c=>`<th>${esc(c)}</th>`).join('') + `</tr></thead><tbody>` +
     RESP.map((r,i)=>{
       const t = new Date(r.created_at);
       const ts = `${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-      return `<tr><td>${i+1}</td><td style="white-space:nowrap">${ts}</td>` +
+      return `<tr><td><input type="checkbox" class="pick" value="${r.id}"></td><td>${i+1}</td><td style="white-space:nowrap">${ts}</td>` +
         cols.map(c=>`<td>${esc((r.answers||{})[c]||'').replace(/\n/g,'<br>')}</td>`).join('') +
-        `<td><button class="mini del" onclick="delResp(${r.id})">삭제</button></td></tr>`;
+        `</tr>`;
     }).join('') + `</tbody></table></div>`;
 
   body.innerHTML = h;
 }
 
+function toggleAll(el){
+  document.querySelectorAll('.pick').forEach(c=>{ c.checked = el.checked; });
+}
+async function delSelected(){
+  const ids = [...document.querySelectorAll('.pick:checked')].map(c=>Number(c.value));
+  if(!ids.length){ alert('삭제할 응답을 먼저 선택해주세요.'); return; }
+  if(!confirm(ids.length+'건을 삭제할까요?')) return;
+  const {error} = await sb.from('survey_responses').delete().in('id', ids);
+  if(error){ alert('삭제 실패\n'+error.message); return; }
+  renderRes();
+}
 async function delResp(id){
   if(!confirm('이 응답을 삭제할까요?')) return;
   const { error } = await sb.from('survey_responses').delete().eq('id', id);
