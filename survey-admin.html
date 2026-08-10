@@ -7,6 +7,14 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+.toggle{display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;}
+.toggle input{display:none;}
+.toggle .track{width:46px; height:26px; border-radius:20px; background:#ccc; position:relative; transition:.25s;}
+.toggle .track::after{content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:.25s;}
+.toggle input:checked + .track{background:#5e8a68;}
+.toggle input:checked + .track::after{transform:translateX(20px);}
+.toggle .lbl{font-size:13px; font-weight:700; color:#666;}
+
 <style>
   *{box-sizing:border-box;}
   body{margin:0; background:#f4f1ea; font-family:Pretendard,-apple-system,sans-serif; color:#2e2e2e; font-size:14px;}
@@ -100,7 +108,11 @@ function renderEdit(){
     <label class="f">안내 문구</label>
     <textarea id="sIntro">${esc(SURVEY.intro||'')}</textarea>
     <label class="chk" style="margin-top:10px;">
-      <input type="checkbox" id="sOpen" ${SURVEY.is_open!==false?'checked':''}> 설문 받는 중 (끄면 마감 안내가 표시됩니다)
+      <label class="toggle">
+        <input type="checkbox" id="sOpen" ${SURVEY.is_open!==false?'checked':''} onchange="this.parentNode.querySelector('.lbl').textContent = this.checked ? '🟢 설문 받는 중' : '🔒 마감';">
+        <span class="track"></span>
+        <span class="lbl">${SURVEY.is_open!==false?'🟢 설문 받는 중':'🔒 마감'}</span>
+      </label>
     </label>
   </div>`;
 
