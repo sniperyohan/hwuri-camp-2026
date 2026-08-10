@@ -431,14 +431,18 @@
 
   await loadPrayers(camp.id);
 
-  // 셋째 줄: 설문조사 버튼
+  // 셋째 줄: 설문조사 버튼 (설문이 '받는 중'일 때만 표시)
   const tabsEl3 = document.getElementById('tabs3');
   if(tabsEl3 && typeof SURVEY_URL === 'string' && SURVEY_URL){
-    const s=document.createElement('button');
-    s.className='tab tab-survey';
-    s.textContent='📝 설문조사';
-    s.onclick=()=>window.open(SURVEY_URL,'_blank','noopener');
-    tabsEl3.appendChild(s);
+    const { data: sv } = await sb.from('surveys')
+      .select('is_open').eq('camp_id', camp.id).maybeSingle();
+    if(sv && sv.is_open !== false){
+      const s=document.createElement('button');
+      s.className='tab tab-survey';
+      s.textContent='📝 설문조사';
+      s.onclick=()=>window.open(SURVEY_URL,'_blank','noopener');
+      tabsEl3.appendChild(s);
+    }
   }
 
   const startDate = dates.includes(todayStr) ? todayStr : dates[0];
