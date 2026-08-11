@@ -20,6 +20,7 @@
   input[type=text], textarea{width:100%; border:1px solid #ddd; border-radius:10px; padding:11px; font-size:15px; font-family:inherit; background:#fafafa;}
   textarea{min-height:96px; resize:vertical; line-height:1.6;}
   input[type=text]:focus, textarea:focus{outline:none; border-color:#5e8a68; background:#fff;}
+  .cnt{transition:color .2s;}
   .stars{display:flex; gap:6px;}
   .star{flex:1; padding:10px 0; border:1px solid #e0e0e0; background:#fafafa; border-radius:10px; font-size:20px; cursor:pointer; line-height:1;}
   .star.on{background:#fff3e0; border-color:#e0a96d;}
@@ -99,8 +100,8 @@
       body = '<div class="hint">여러 개 선택할 수 있습니다</div><div class="opts">' + (q.options||[]).map(o =>
         `<button type="button" class="opt multi" data-q="${q.id}" data-v="${esc(o)}">${esc(o)}</button>`).join('') + '</div>';
     } else if(q.type === 'long'){
-      body = `<textarea data-q="${q.id}" placeholder="자유롭게 적어주세요"></textarea>
-              <div class="cnt" id="cnt-${q.id}">0자</div>`;
+      body = `<textarea data-q="${q.id}" maxlength="500" placeholder="자유롭게 적어주세요"></textarea>
+              <div class="cnt" id="cnt-${q.id}">0 / 500자</div>`;
     } else {
       body = `<input type="text" data-q="${q.id}" placeholder="입력해주세요">`;
     }
@@ -147,7 +148,11 @@
     if(el.dataset && el.dataset.q){
       ANSWERS[el.dataset.q] = el.value.trim();
       const c = document.getElementById('cnt-' + el.dataset.q);
-      if(c) c.textContent = el.value.length + '자';
+      if(c){
+        const n = el.value.length;
+        c.textContent = n + ' / 500자';
+        c.style.color = n >= 450 ? '#c0392b' : '';
+      }
     }
   });
 
