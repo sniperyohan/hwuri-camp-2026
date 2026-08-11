@@ -179,14 +179,15 @@
 @keyframes fabPulse{0%,100%{box-shadow:0 8px 24px rgba(94,138,104,.45);} 50%{box-shadow:0 10px 32px rgba(94,138,104,.8);}}
 @keyframes fabShine{0%{left:-60%;} 60%,100%{left:120%;}}
 @keyframes fabDot{0%{box-shadow:0 0 0 0 rgba(255,224,138,.8);} 70%{box-shadow:0 0 0 10px rgba(255,224,138,0);} 100%{box-shadow:0 0 0 0 rgba(255,224,138,0);}}
-#surveyFab .bell{display:inline-block; transform-origin:50% 0;
-  animation:bellRing 3.6s ease-in-out 1.2s infinite;}
+#surveyFab .bell{display:inline-block; transform-origin:50% 0; will-change:transform;
+  animation:bellRing 2s ease-in-out .6s infinite;}
 @keyframes bellRing{
-  0%,72%,100%{transform:rotate(0);}
-  74%{transform:rotate(16deg);}  77%{transform:rotate(-14deg);}
-  80%{transform:rotate(11deg);}  83%{transform:rotate(-9deg);}
-  86%{transform:rotate(6deg);}   89%{transform:rotate(-4deg);}
-  92%{transform:rotate(2deg);}   95%{transform:rotate(0);}
+  0%{transform:rotate(0);}
+  6%{transform:rotate(26deg);}   12%{transform:rotate(-22deg);}
+  18%{transform:rotate(18deg);}  24%{transform:rotate(-15deg);}
+  30%{transform:rotate(11deg);}  36%{transform:rotate(-8deg);}
+  42%{transform:rotate(5deg);}   48%{transform:rotate(-2deg);}
+  54%,100%{transform:rotate(0);}
 }
 
 @media (prefers-reduced-motion:reduce){#surveyFab,#surveyFab::after,#surveyFab .dot,#surveyFab .bell{animation:none;}}
