@@ -67,7 +67,7 @@ table td:nth-child(n+4){ min-width:160px; max-width:320px; word-break:break-word
 let CAMP=null, SURVEY=null, QS=[], RESP=[], TAB='edit', ONLYCUR=true;
 const SLUG = new URLSearchParams(location.search).get('c');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const TYPES = {text:'단답형', long:'장문형', choice:'객관식(1개)', multi:'객관식(여러개)'};
+const TYPES = {text:'단답형', long:'장문형', choice:'객관식(1개)', select:'드롭다운', multi:'객관식(여러개)'};
 
 (async function(){
   const wrap = document.getElementById('wrap');
@@ -117,7 +117,7 @@ function renderEdit(){
   </div>`;
 
   QS.forEach((q,i)=>{
-    const isOpt = (q.type==='choice'||q.type==='multi');
+    const isOpt = (q.type==='choice'||q.type==='select'||q.type==='multi');
     h += `<div class="card">
       <div class="qhead">
         <div class="qno">${i+1}</div>
@@ -198,7 +198,7 @@ async function renderRes(){
       <button class="btn" onclick="downloadCsv()">엑셀 다운로드</button>
     </div><div class="card">`;
 
-  QS.filter(q=>q.type==='choice'||q.type==='multi').forEach(q=>{
+  QS.filter(q=>q.type==='choice'||q.type==='select'||q.type==='multi').forEach(q=>{
     const counts={}; (q.options||[]).forEach(o=>counts[o]=0);
     RESP.forEach(r=>{
       const v = (r.answers||{})[q.label]; if(!v) return;
