@@ -441,9 +441,10 @@ function renderThumbs(id, kind){
       <img src="${src}"><span class="n">${i+1}</span>
       <div class="mv">
         <button type="button" onclick="moveImg(${id},'${kind}',${i},${i-1})">◀</button>
+        <button type="button" onclick="deleteImg(${id},'${kind}',${i})">✕</button>
         <button type="button" onclick="moveImg(${id},'${kind}',${i},${i+1})">▶</button>
       </div>
-    </div>`;
+      </div>`;
   }).join('');
 
   let from = null;
@@ -472,6 +473,28 @@ function moveImg(id, kind, from, to){
   autoGrow(el);
   renderThumbs(id, kind);
   if(kind === 'prayer') queuePrayerSave(id); else queueSave(el, id);
+}
+
+async function deleteImg(id, kind, i){
+  const el = targetEl(id, kind);
+  if(!el) return;
+  const arr = el.value.match(imgRe()) || [];
+  if(i < 0 || i >= arr.length) return;
+  if(!confirm('이 사진을 삭제할까요?\n저장소에서도 완전히 지워지며 되돌릴 수 없습니다.')) return;
+
+  const src = (arr[i].match(/src="([^"]*)"/i) || [])[1] || '';
+  let k = 0;
+  el.value = el.value.replace(imgRe(), m => (k++ === i ? '' : m));
+  autoGrow(el);
+  renderThumbs(id, kind);
+  if(kind === 'prayer') queuePrayerSave(id); else queueSave(el, id);
+
+  const part = src.split('/uploads/')[1];
+  if(part){
+    const path = decodeURIComponent(part.split('?')[0]);
+    const { error } = await sb.storage.from('uploads').remove([path]);
+    if(error) console.warn('저장소 삭제 실패:', error.message);
+  }
 }
 
 function insertSnippet(el, snippet){
