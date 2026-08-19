@@ -521,12 +521,16 @@ function shrinkImage(file, maxW){
 async function uploadImages(input, id, kind){
   const files = Array.from(input.files || []);
   input.value = '';
+  await uploadFiles(files, id, kind);
+}
+
+async function uploadFiles(files, id, kind){
   if(!files.length) return;
-  const msg = input.closest('.inner').querySelector('.up-msg');
   const el = (kind === 'prayer')
     ? document.getElementById('pc-' + id)
     : document.querySelector(`.card[data-id="${id}"] .f-detail`);
   if(!el){ alert('입력칸을 찾을 수 없습니다.'); return; }
+  const msg = el.closest('.inner')?.querySelector('.up-msg') || {};
 
   for(let i = 0; i < files.length; i++){
     msg.textContent = `업로드 중 ${i+1}/${files.length}...`;
@@ -550,6 +554,21 @@ async function uploadImages(input, id, kind){
   setTimeout(()=>{ msg.textContent = ''; }, 3000);
   if(kind === 'prayer') queuePrayerSave(id); else queueSave(el, id);
 }
+
+document.addEventListener('paste', async e => {
+  const el = e.target;
+  if(!el || el.tagName !== 'TEXTAREA') return;
+  const files = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith('image/'));
+  if(!files.length) return;
+  e.preventDefault();
+  if(el.id && el.id.startsWith('pc-')){
+    await uploadFiles(files, el.id.slice(3), 'prayer');
+  }else{
+    const card = el.closest('.card[data-id]');
+    if(!card) return;
+    await uploadFiles(files, card.dataset.id, 'event');
+  }
+});
 
 function addTabLink(id, tabId){
   const tab = getTabs().find(t=>t.id===tabId);
