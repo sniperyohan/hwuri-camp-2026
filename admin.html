@@ -381,7 +381,7 @@ function cardHtml(e, i, arr){
       <textarea class="f-detail full" placeholder="줄바꿈으로 여러 줄 입력 가능" onfocus="setActive(this)" oninput="autoGrow(this); queueSave(this,${e.id})">${escText(e.detail)}</textarea>
       <label class="full">이모지 넣기 <span style="font-weight:400;color:#8a90a0;font-size:12px;">(제목이나 상세 칸을 클릭한 뒤 이모지를 누르세요)</span></label>
       <div class="emoji-row full">${picks}</div>
-      <details class="tools" ${/<img\b/i.test(e.detail||'') ? 'open' : ''} ontoggle="if(this.open) renderThumbs(${e.id},'event')">
+      <details class="tools" open ontoggle="if(this.open) renderThumbs(${e.id},'event')">
         <summary>탭 링크 · 사진 · 외부 링크</summary>
         <div class="inner">
           <div class="cap">누르면 상세내용에 '해당 탭으로 이동' 링크가 들어갑니다</div>
@@ -634,6 +634,7 @@ function autoGrow(el){
 }
 function growAll(){
   document.querySelectorAll('textarea').forEach(autoGrow);
+  document.querySelectorAll('.thumbs').forEach(b => { const [k, i] = (b.dataset.tid||'').split('-'); if(k && i) renderThumbs(i, k); });
 }
 
 async function flushSave(){
@@ -724,7 +725,7 @@ function renderPrayers(){
       </div>
       <input id="pt-${p.id}" oninput="queuePrayerSave(${p.id})" value="${(p.title||'').replace(/"/g,'&quot;')}" placeholder="제목" style="width:100%; margin-bottom:6px; font-weight:700;">
       <textarea id="pc-${p.id}" oninput="autoGrow(this); queuePrayerSave(${p.id})" placeholder="내용" style="width:100%; min-height:150px;">${p.content||''}</textarea>
-      <details class="tools" ${/<img\b/i.test(p.content||'') ? 'open' : ''} ontoggle="if(this.open) renderThumbs(${p.id},'prayer')">
+      <details class="tools" open ontoggle="if(this.open) renderThumbs(${p.id},'prayer')">
         <summary>사진 첨부</summary>
         <div class="inner">
           <div class="cap">사진은 자동으로 줄여서 올라갑니다 (여러 장 선택 가능)</div>
