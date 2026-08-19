@@ -440,7 +440,7 @@ function renderThumbs(id, kind){
     const src = (t.match(/src="([^"]*)"/i) || [])[1] || '';
     return `<div class="thumb" draggable="true" data-i="${i}" title="끌어서 순서 변경" style="position:relative">
       <img src="${src}"><span class="n">${i+1}</span>
-      <button type="button" class="del-badge" onclick="deleteImg(${id},'${kind}',${i})">삭제</button>
+      <button type="button" class="del-badge" draggable="false" title="이미지를 삭제합니다" onclick="deleteImg(${id},'${kind}',${i})">삭제</button>
       <div class="mv">
         <button type="button" onclick="moveImg(${id},'${kind}',${i},${i-1})">◀</button>
         <button type="button" onclick="moveImg(${id},'${kind}',${i},${i+1})">▶</button>
