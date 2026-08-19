@@ -60,6 +60,7 @@
   .up-btn{display:inline-block; cursor:pointer; font-size:12.5px; font-weight:700; color:#fff; background:#5e8a68; border-radius:6px; padding:6px 11px;}
   .up-msg{font-size:12px; color:#5e8a68; font-weight:700; margin-left:8px;}
   .thumbs{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .del-badge{position:absolute; top:2px; right:2px; z-index:2; background:#e74c3c; color:#fff; border:0; border-radius:4px; font-size:10px; font-weight:700; padding:2px 5px; cursor:pointer; line-height:1;}
   .thumb{position:relative; width:76px; border:1px solid #dde1e8; border-radius:8px; background:#fff; padding:4px; cursor:grab;}
   .thumb img{width:100%; height:76px; object-fit:contain; background:#f4f5f7; border-radius:5px; display:block; pointer-events:none;}
   .thumb.drag{opacity:.4;}
@@ -437,11 +438,11 @@ function renderThumbs(id, kind){
   const tags = el.value.match(imgRe()) || [];
   box.innerHTML = tags.map((t, i)=>{
     const src = (t.match(/src="([^"]*)"/i) || [])[1] || '';
-    return `<div class="thumb" draggable="true" data-i="${i}" title="끌어서 순서 변경">
+    return `<div class="thumb" draggable="true" data-i="${i}" title="끌어서 순서 변경" style="position:relative">
       <img src="${src}"><span class="n">${i+1}</span>
+      <button type="button" class="del-badge" onclick="deleteImg(${id},'${kind}',${i})">삭제</button>
       <div class="mv">
         <button type="button" onclick="moveImg(${id},'${kind}',${i},${i-1})">◀</button>
-        <button type="button" onclick="deleteImg(${id},'${kind}',${i})">✕</button>
         <button type="button" onclick="moveImg(${id},'${kind}',${i},${i+1})">▶</button>
       </div>
       </div>`;
