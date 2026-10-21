@@ -82,3 +82,21 @@
   sb.auth.getSession().then(({ data }) => { if(data.session) render(); });
   sb.auth.onAuthStateChange((ev, session) => { if(session) render(); });
 })();
+
+// ===== 관리 화면에 "업무 체크리스트" 버튼 추가 =====
+(function(){
+  const slug = new URLSearchParams(location.search).get('c');
+  if(!slug) return;
+  setInterval(() => {
+    if(document.getElementById('taskBtn')) return;
+    const sv = [...document.querySelectorAll('button, a')].find(b => b.textContent.includes('설문 관리'));
+    if(!sv) return;
+    const a = document.createElement('a');
+    a.id = 'taskBtn';
+    a.href = 'tasks.html?c=' + encodeURIComponent(slug);
+    a.textContent = '✅ 업무 체크리스트';
+    a.className = sv.className;
+    a.style.cssText = (sv.getAttribute('style') || '') + ';margin-left:8px;text-decoration:none;display:inline-block;background:#eef7ee;color:#3f7a4c;border-color:#cfe0cf;';
+    sv.after(a);
+  }, 800);
+})();

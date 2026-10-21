@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>업무 체크리스트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Pretendard',sans-serif; margin:0; padding:20px 14px 60px; background:#f4f5f8; color:#1f2430;}
+  .wrap{max-width:860px; margin:0 auto;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .sub{color:#8a909c; font-size:13px;}
+  .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px;}
+  .btn{border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; font-family:inherit;}
+  .ghost{background:#e8eaee; color:#5c6270;}
+  .add{background:#5e8a68; color:#fff; width:100%; padding:12px; font-size:14px;}
+  .mini{background:#eef1f6; color:#4a5b7c; padding:5px 9px; font-size:12px;}
+  .del{background:#f3e3e3; color:#b23b3b; padding:5px 9px; font-size:12px;}
+  .sum{background:#fff; border-radius:14px; padding:16px 20px; margin-bottom:14px; font-size:15px;}
+  .bar{height:8px; background:#eceef2; border-radius:10px; overflow:hidden; margin-top:10px;}
+  .fill{height:100%; background:#5e8a68; transition:width .4s;}
+  .task{background:#fff; border:1px solid #e8eaee; border-left:4px solid #dde1e8; border-radius:10px; padding:12px 14px; margin-bottom:10px;}
+  .task.done{border-left-color:#5e8a68; background:#f6faf6;}
+  .task.done .title{text-decoration:line-through; color:#8a909c;}
+  .r1{display:flex; align-items:center; gap:8px;}
+  .r1 input[type=checkbox]{width:22px; height:22px; cursor:pointer; accent-color:#5e8a68; flex:none;}
+  .no{font-weight:800; color:#8a909c; width:22px; text-align:center; flex:none;}
+  .title{flex:1; font-size:15px; font-weight:700; border:1px solid transparent; border-radius:6px; padding:6px 8px; font-family:inherit; min-width:0;}
+  .title:hover,.title:focus{border-color:#dde1e8;}
+  .r2{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px; padding-left:60px;}
+  .r2 .full{grid-column:1/-1;}
+  .r2 label{font-size:11.5px; color:#8a909c; font-weight:700; display:block; margin-bottom:2px;}
+  .r2 input{width:100%; font-family:inherit; font-size:14px; border:1px solid #dde1e8; border-radius:7px; padding:7px 9px;}
+  @media(max-width:600px){ .r2{grid-template-columns:1fr 1fr; padding-left:0;} }
+  #login{max-width:340px; margin:80px auto; background:#fff; border-radius:14px; padding:30px 26px; text-align:center;}
+  #login input{width:100%; padding:11px 12px; font-size:15px; border:1px solid #dde1e8; border-radius:8px; margin-bottom:12px; font-family:inherit;}
+  #toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:8px 16px; border-radius:20px; font-size:13px; opacity:0; transition:.3s; pointer-events:none;}
+  .empty{text-align:center; color:#8a909c; padding:30px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" style="display:none">
+    <h2 style="font-size:17px">🔑 관리자 로그인</h2>
+    <input type="email" id="email" placeholder="이메일">
+    <input type="password" id="pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="btn" style="width:100%;background:#4a5b7c;color:#fff;padding:11px" onclick="tryLogin()">로그인</button>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="top">
+      <div><h1>✅ 업무 체크리스트</h1><div class="sub" id="campName"></div></div>
+      <a class="btn ghost" id="back">← 관리 화면</a>
+    </div>
+    <div class="sum" id="sum"></div>
+    <div id="list"></div>
+    <button class="btn add" onclick="addTask()">＋ 업무 추가</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const SUPER_ADMIN = 'bcc871ee-6e51-4f24-92d9-b4a72572135c';
+const slug = new URLSearchParams(location.search).get('c');
+let CAMP = null, TASKS = [];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+function toast(t){ const el=$('toast'); el.textContent=t; el.style.opacity=1; clearTimeout(el._t); el._t=setTimeout(()=>el.style.opacity=0,1200); }
+
+(async function(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) start(); else $('login').style.display='block';
+})();
+
+async function tryLogin(){
+  const { error } = await sb.auth.signInWithPassword({ email:$('email').value.trim(), password:$('pw').value });
+  if(error){ alert('로그인 실패: 이메일/비밀번호를 확인하세요.'); return; }
+  $('login').style.display='none';
+  start();
+}
+
+async function start(){
+  if(!slug){ alert('주소 뒤에 ?c=슬러그 가 필요합니다.'); return; }
+  const { data: camp } = await sb.from('camps').select('*').eq('slug', slug).single();
+  if(!camp){ alert('캠프를 찾을 수 없습니다.'); return; }
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user || (camp.owner !== user.id && user.id !== SUPER_ADMIN)){
+    alert('🔒 이 캠프의 관리 권한이 없습니다.'); location.href = 'admin.html?c=' + slug; return;
+  }
+  CAMP = camp;
+  $('campName').textContent = camp.title || slug;
+  $('back').href = 'admin.html?c=' + encodeURIComponent(slug);
+  $('app').style.display = 'block';
+  load();
+}
+
+async function load(){
+  const { data, error } = await sb.from('tasks').select('*').eq('camp_id', CAMP.id).order('sort_order').order('id');
+  if(error){ $('list').innerHTML = '<div class="empty">불러오기 실패: ' + esc(error.message) + '</div>'; return; }
+  TASKS = data || [];
+  render();
+}
+
+function renderSum(){
+  const done = TASKS.filter(t => t.done).length;
+  const total = TASKS.reduce((a, t) => a + (t.budget || 0), 0);
+  const pct = TASKS.length ? Math.round(done / TASKS.length * 100) : 0;
+  $('sum').innerHTML = `진행 <b>${done} / ${TASKS.length}</b> 완료 (${pct}%) &nbsp;·&nbsp; 예산 총계 <b>₩${total.toLocaleString()}</b>
+    <div class="bar"><div class="fill" style="width:${pct}%"></div></div>`;
+}
+
+function render(){
+  renderSum();
+  if(!TASKS.length){ $('list').innerHTML = '<div class="empty">업무가 없습니다. 아래 버튼으로 추가하세요.</div>'; return; }
+  $('list').innerHTML = TASKS.map((t, i) => `
+    <div class="task ${t.done ? 'done' : ''}" id="task-${t.id}">
+      <div class="r1">
+        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="save(${t.id},'done',this.checked)">
+        <span class="no">${i + 1}</span>
+        <input class="title" value="${esc(t.title)}" placeholder="업무 내용" onchange="save(${t.id},'title',this.value)">
+        <button class="btn mini" onclick="move(${i},-1)" ${i === 0 ? 'disabled style="opacity:.3"' : ''}>▲</button>
+        <button class="btn mini" onclick="move(${i},1)" ${i === TASKS.length - 1 ? 'disabled style="opacity:.3"' : ''}>▼</button>
+        <button class="btn del" onclick="delTask(${t.id})">삭제</button>
+      </div>
+      <div class="r2">
+        <div><label>담당</label><input value="${esc(t.assignee)}" onchange="save(${t.id},'assignee',this.value)"></div>
+        <div><label>기한</label><input type="date" value="${t.due_date || ''}" onchange="save(${t.id},'due_date',this.value)"></div>
+        <div><label>예산 (원)</label><input type="number" min="0" step="1000" value="${t.budget || ''}" onchange="save(${t.id},'budget',this.value)"></div>
+        <div class="full"><label>비고</label><input value="${esc(t.note)}" onchange="save(${t.id},'note',this.value)"></div>
+      </div>
+    </div>`).join('');
+}
+
+async function save(id, field, val){
+  if(field === 'budget') val = parseInt(String(val).replace(/[^0-9]/g, '')) || 0;
+  if(field === 'due_date') val = val || null;
+  if(field === 'title' && !String(val).trim()){ alert('업무 내용을 입력하세요.'); load(); return; }
+  const { error } = await sb.from('tasks').update({ [field]: val }).eq('id', id);
+  if(error){ alert('저장 실패: ' + error.message); load(); return; }
+  const t = TASKS.find(x => x.id === id); t[field] = val;
+  if(field === 'done') $('task-' + id).classList.toggle('done', val);
+  renderSum();
+  toast('✔ 저장됨');
+}
+
+async function addTask(){
+  const max = TASKS.reduce((a, t) => Math.max(a, t.sort_order || 0), 0);
+  const { error } = await sb.from('tasks').insert({ camp_id: CAMP.id, sort_order: max + 1, title: '새 업무' });
+  if(error){ alert('추가 실패: ' + error.message); return; }
+  await load();
+  const inputs = document.querySelectorAll('.title');
+  const last = inputs[inputs.length - 1]; if(last){ last.focus(); last.select(); }
+}
+
+async function delTask(id){
+  const t = TASKS.find(x => x.id === id);
+  if(!confirm('"' + t.title + '" 업무를 삭제할까요?')) return;
+  const { error } = await sb.from('tasks').delete().eq('id', id);
+  if(error){ alert('삭제 실패: ' + error.message); return; }
+  load();
+}
+
+async function move(i, d){
+  const j = i + d; if(j < 0 || j >= TASKS.length) return;
+  [TASKS[i], TASKS[j]] = [TASKS[j], TASKS[i]];
+  await Promise.all(TASKS.map((t, k) => sb.from('tasks').update({ sort_order: k + 1 }).eq('id', t.id)));
+  load();
+}
+</script>
+</body>
+</html>
