@@ -102,7 +102,7 @@
       html += `<div class="tc ${d.cls}">
         <div class="tc-d"><div class="tc-dnum">${d.num}</div><div class="tc-dsub">${d.sub}</div></div>
         <div class="tc-body">
-          <div class="tc-title"><span class="tc-no">${t.no}</span>${esc(t.title)}</div>
+          <div class="tc-title">${esc(t.title)}</div>
           ${pills.length ? `<div class="tc-meta">${pills.map(p => `<span class="tc-pill">${p}</span>`).join('')}</div>` : ''}
           ${t.note ? `<div class="tc-note">📝 ${esc(t.note)}</div>` : ''}
         </div>
