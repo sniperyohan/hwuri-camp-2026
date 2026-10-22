@@ -18,16 +18,16 @@
     .tv-chip{border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.85);border-radius:20px;padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:inherit;}
     .tv-chip.on{background:#5e8a68;color:#fff;border-color:#5e8a68;}
 
-    .tc{display:flex;align-items:stretch;gap:14px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
-    .tc-d{flex:none;width:78px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;text-align:center;}
+    .tc{display:flex;align-items:stretch;gap:24px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:16px 22px 16px 16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+    .tc-d{flex:none;width:92px;min-height:76px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 6px;text-align:center;}
     .tc-dnum{font-size:22px;font-weight:900;line-height:1.1;letter-spacing:-.5px;}
     .tc-dsub{font-size:11.5px;font-weight:700;margin-top:3px;opacity:.85;}
     .tc-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;}
     .tc-title{font-size:17px;font-weight:800;line-height:1.35;}
     .tc-no{font-size:13px;font-weight:800;opacity:.35;margin-right:6px;}
-    .tc-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+    .tc-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
     .tc-pill{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(0,0,0,.05);}
-    .tc-note{font-size:13px;margin-top:6px;opacity:.75;}
+    .tc-note{font-size:13px;margin-top:9px;opacity:.75;}
 
     .tc.over  .tc-d{background:#fde8e8;color:#c53030;}
     .tc.over  {border-color:#f5c2c2;}
@@ -41,8 +41,8 @@
     .tv-empty{text-align:center;padding:24px;opacity:.6;font-size:13.5px;}
 
     @media(max-width:600px){
-      .tc{gap:11px;padding:10px;}
-      .tc-d{width:68px;}
+      .tc{gap:16px;padding:13px 16px 13px 13px;}
+      .tc-d{width:78px;min-height:68px;}
       .tc-dnum{font-size:19px;}
       .tc-title{font-size:15.5px;}
     }
