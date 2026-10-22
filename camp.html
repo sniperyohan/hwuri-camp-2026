@@ -347,6 +347,7 @@
   let PRAYERS = [];
   let LOCKED = {};
   let TABS = [];
+  const tabIcon = n => { n = String(n||""); const cp = n.codePointAt(0) || 0; if(cp >= 0x1F000 || (cp >= 0x2600 && cp <= 0x27BF)) return ""; return n.includes("기도") ? "🙏 " : ""; };
   function getTabs(){
     let t = camp && camp.tabs;
     if(typeof t === 'string'){ try{ t = JSON.parse(t); }catch(e){ t = null; } }
