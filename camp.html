@@ -347,7 +347,6 @@
   let PRAYERS = [];
   let LOCKED = {};
   let TABS = [];
-  const tabIcon = n => { n = String(n||""); const cp = n.codePointAt(0) || 0; if(cp >= 0x1F000 || (cp >= 0x2600 && cp <= 0x27BF)) return ""; return n.includes("기도") ? "🙏 " : ""; };
   function getTabs(){
     let t = camp && camp.tabs;
     if(typeof t === 'string'){ try{ t = JSON.parse(t); }catch(e){ t = null; } }
@@ -372,7 +371,7 @@
     shown.forEach(tab=>{
       const b=document.createElement('button');
       b.className='tab tab-prayer'; b.dataset.date='__prayer__'+tab.id;
-      b.textContent='🙏 ' + tab.name;
+      b.textContent='' + tab.name;
       b.onclick=()=>renderPrayers(tab.id);
       tabsEl.appendChild(b);
     });
@@ -390,7 +389,7 @@
         const content = (p.content||'').replace(/</g,'&lt;')
           .replace(/&lt;(\/?)(img|a|br)\b([^>]*)>/gi, '<$1$2$3>');
         html += `<div class="prayer-card">
-          <div class="p-title">🙏 ${title}</div>
+          <div class="p-title">${title}</div>
           ${content ? `<div class="p-content">${content}</div>` : ''}
         </div>`;
       }
