@@ -42,6 +42,8 @@
   .badge{display:none; flex:none; font-size:12.5px; font-weight:800; padding:4px 10px; border-radius:20px; white-space:nowrap;}
   .task.done .badge.ok{display:inline-block; background:#5e8a68; color:#fff;}
   .task:not(.done) .badge.wait{display:inline-block; background:#fff4e0; color:#b7791f;}
+  button.badge{border:none; cursor:pointer; font-family:inherit;}
+  button.badge:hover{filter:brightness(.92); box-shadow:0 0 0 2px rgba(0,0,0,.08);}
 </style>
 </head>
 <body>
@@ -125,7 +127,7 @@ function render(){
         <input type="checkbox" ${t.done ? 'checked' : ''} onchange="save(${t.id},'done',this.checked)">
         <span class="no">${i + 1}</span>
         <input class="title" value="${esc(t.title)}" placeholder="업무 내용" onchange="save(${t.id},'title',this.value)">
-        <span class="badge ok">✔ 완료</span><span class="badge wait">진행중</span><button class="btn mini" onclick="move(${i},-1)" ${i === 0 ? 'disabled style="opacity:.3"' : ''}>▲</button>
+        <button type="button" class="badge ok" onclick="toggleDone(${t.id})" title="눌러서 진행중으로 되돌리기">✔ 완료 ↩</button><button type="button" class="badge wait" onclick="toggleDone(${t.id})" title="눌러서 완료 처리">진행중</button><button class="btn mini" onclick="move(${i},-1)" ${i === 0 ? 'disabled style="opacity:.3"' : ''}>▲</button>
         <button class="btn mini" onclick="move(${i},1)" ${i === TASKS.length - 1 ? 'disabled style="opacity:.3"' : ''}>▼</button>
         <button class="btn del" onclick="delTask(${t.id})">삭제</button>
       </div>
@@ -148,6 +150,13 @@ async function save(id, field, val){
   if(field === 'done') $('task-' + id).classList.toggle('done', val);
   renderSum();
   toast('✔ 저장됨');
+}
+
+async function toggleDone(id){
+  const t = TASKS.find(x => x.id === id); if(!t) return;
+  if(t.done){ if(!confirm(`"${t.title}" 업무를 진행중으로 되돌릴까요?`)) return; }
+  await save(id, "done", !t.done);
+  render();
 }
 
 async function addTask(){
